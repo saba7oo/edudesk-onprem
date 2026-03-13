@@ -1,5 +1,11 @@
 module.exports=[54799,(e,t,r)=>{t.exports=e.x("crypto",()=>require("crypto"))},14747,(e,t,r)=>{t.exports=e.x("path",()=>require("path"))},22734,(e,t,r)=>{t.exports=e.x("fs",()=>require("fs"))},54970,e=>{"use strict";var t=e.i(22734),r=e.i(14747),i=e.i(54799);let o=`-----BEGIN PUBLIC KEY-----
-REPLACE_THIS_WITH_YOUR_ACTUAL_PUBLIC_KEY
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo64q4Lqis/wecZOyxdtp
+GZ/zjexdyYhPs6UqhwvXbHpU6DCNRweqSr2zKiYIEHqzgKB6ESNOMmrBgBW3mtll
+MBV3HQx6OA+C5JnZI7P9Hq7WxD0DPtHPdOwyJhp5uFsvGPfPOhSmutTX9d136w4P
+bHsuAf2B0OQtsNXC/F4IpEABko6YQuNMe1Cr0RZccNHcjkPqKsRHjygNhr0QcTBH
+NAxg8rIbWQvNTMqIgkzkTLBR8HoNrTPhDThME05gndED0lPzYFA8pP6W8yOHdVZG
+3Ri3vnzOxcH9/IvbWbsB4+bb6R9k6hb34NmGP6CW56/jsQra3FzittlZ8rhetoSA
+9QIDAQAB
 -----END PUBLIC KEY-----`;function a(){let e,i=process.env.LICENSE_KEY_PATH||"./LICENSE.key",o=r.default.resolve(process.cwd(),i);if(!t.default.existsSync(o))throw Error(`LICENSE.key not found at: ${o}
 Place your LICENSE.key file in the app root directory.
 Set LICENSE_KEY_PATH in .env if it is in a different location.`);try{e=t.default.readFileSync(o,"utf8")}catch{throw Error(`Cannot read LICENSE.key at: ${o}`)}try{return JSON.parse(e)}catch{throw Error(`LICENSE.key is not valid JSON. The file may be corrupted.
