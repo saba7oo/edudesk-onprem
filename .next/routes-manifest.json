@@ -215,6 +215,12 @@
       "namedRegex": "^/api/tenant/kb(?:/)?$"
     },
     {
+      "page": "/api/tenant/license",
+      "regex": "^/api/tenant/license(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tenant/license(?:/)?$"
+    },
+    {
       "page": "/api/tenant/performance",
       "regex": "^/api/tenant/performance(?:/)?$",
       "routeKeys": {},

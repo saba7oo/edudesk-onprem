@@ -1,8 +1,8 @@
 var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/institution/ad-sync/route.js")
-R.c("server/chunks/[root-of-the-server]__2dbda610._.js")
+R.c("server/chunks/[root-of-the-server]__d9977a5e._.js")
 R.c("server/chunks/node_modules_bcryptjs_68d01eb0._.js")
-R.c("server/chunks/[root-of-the-server]__807977d4._.js")
 R.c("server/chunks/node_modules_next_f2da0d3e._.js")
+R.c("server/chunks/[root-of-the-server]__807977d4._.js")
 R.c("server/chunks/_next-internal_server_app_api_institution_ad-sync_route_actions_f621e717.js")
 R.m(24701)
 module.exports=R.m(24701).exports
