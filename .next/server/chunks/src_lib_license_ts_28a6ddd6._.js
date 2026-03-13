@@ -1,0 +1,3 @@
+module.exports=[79167,e=>{"use strict";function t(e){let t=new Date;if("DEMO"===e.type&&e.trialEndsAt){let a=new Date(e.trialEndsAt),s=Math.ceil((a.getTime()-t.getTime())/864e5),r=t>a,i=!r&&s<=7;return{valid:!r,expired:r,expiresSoon:i,daysLeft:Math.max(0,s),readOnly:r,message:r?"Your EduDesk trial has expired. Contact support@ctitans.com to purchase.":i?`Your trial expires in ${s} day${1===s?"":"s"}. Contact support@ctitans.com to purchase.`:null}}return{valid:!0,expired:!1,expiresSoon:!1,daysLeft:null,readOnly:!1,message:null}}e.s(["getLicenseStatus",()=>t])}];
+
+//# sourceMappingURL=src_lib_license_ts_28a6ddd6._.js.map

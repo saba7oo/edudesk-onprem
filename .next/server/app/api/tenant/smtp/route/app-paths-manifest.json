@@ -1,0 +1,3 @@
+{
+  "/api/tenant/smtp/route": "app/api/tenant/smtp/route.js"
+}

@@ -1,0 +1,588 @@
+// EduDesk v3 — Multi-Tenant SaaS Schema (MySQL)
+// Features: Multi-tenancy, AD/SSO, Branding, KB, License, Attachments, Categories, Agent Perms
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  TENANT_ADMIN
+  IT_AGENT
+  TEACHER
+  STAFF
+  STUDENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  ON_HOLD
+  RESOLVED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// Department is now a free-form string to support custom departments per tenant
+
+enum LicensePlan {
+  STARTER
+  PROFESSIONAL
+  DISTRICT
+  UNIVERSITY
+}
+
+enum LicenseStatus {
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  TRIAL
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING
+  ARCHIVED
+}
+
+enum SsoProvider {
+  LDAP
+  AZURE_AD
+  GOOGLE
+  SAML
+  NONE
+}
+
+// ─────────────────────────────────────────────────────────────
+// TENANT
+// ─────────────────────────────────────────────────────────────
+
+model Tenant {
+  id              String       @id @default(cuid())
+  name            String
+  slug            String       @unique
+  domain          String?      @unique
+  status          TenantStatus @default(PENDING)
+  brandingEnabled Boolean      @default(false)
+  adEnabled       Boolean      @default(false)
+  priorityConfig  String?      @db.Text
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  createdById     String?
+
+  branding      TenantBranding?
+  adConfig      AdConfig?
+  license       License?
+  storageConfig TenantStorageConfig?
+  users         User[]
+  tickets       Ticket[]
+  kbArticles    KbArticle[]
+  deptConfigs   DepartmentConfig[]
+  categories    Category[]
+  slaConfigs    SlaConfig[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  smtpConfig    SmtpConfig?
+
+  @@index([slug])
+  @@index([domain])
+  @@map("tenants")
+}
+
+// ─────────────────────────────────────────────────────────────
+// TENANT BRANDING
+// ─────────────────────────────────────────────────────────────
+
+model TenantBranding {
+  id              String  @id @default(cuid())
+  tenantId        String  @unique
+  logoUrl         String?
+  faviconUrl      String?
+  primaryColor    String  @default("#2563EB")
+  secondaryColor  String  @default("#1E3A5F")
+  accentColor     String  @default("#3B82F6")
+  fontFamily      String  @default("Georgia, serif")
+  portalTitle     String  @default("IT Helpdesk")
+  portalSubtitle  String  @default("How can we help you today?")
+  welcomeMessage  String? @db.Text
+  footerText      String?
+  supportEmail    String?
+  customCss       String? @db.LongText
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_branding")
+}
+
+// ─────────────────────────────────────────────────────────────
+// AD / SSO CONFIG
+// ─────────────────────────────────────────────────────────────
+
+model AdConfig {
+  id              String      @id @default(cuid())
+  tenantId        String      @unique
+  provider        SsoProvider @default(NONE)
+  isEnabled       Boolean     @default(false)
+  ldapUrl         String?
+  ldapBaseDn      String?
+  ldapBindDn      String?
+  ldapBindPass    String?
+  ldapUserFilter  String?     @default("(&(objectClass=user)(mail={{email}}))")
+  ldapGroupFilter String?
+  groupRoleMap    String?     @db.Text
+  azureTenantId   String?
+  azureClientId   String?
+  azureClientSecret String?
+  googleDomain              String?
+  googleAdminEmail          String?
+  googleServiceAccountJson  String?   @db.Text
+  samlEntryPoint  String?
+  samlIssuer      String?
+  samlCert        String?     @db.Text
+  autoProvision   Boolean     @default(true)
+  autoDeactivate  Boolean     @default(true)
+  syncSchedule    String?     @default("0 */6 * * *")
+  lastSyncAt      DateTime?
+  lastSyncStatus  String?
+  lastSyncCount   Int?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("ad_configs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// LICENSE
+// ─────────────────────────────────────────────────────────────
+
+model License {
+  id              String        @id @default(cuid())
+  tenantId        String        @unique
+  plan            LicensePlan   @default(STARTER)
+  status          LicenseStatus @default(TRIAL)
+  maxUsers        Int           @default(500)
+  maxAgents       Int           @default(1)
+  maxDepartments  Int           @default(-1)  // -1 = unlimited
+  maxKbArticles   Int           @default(50)
+  maxTicketsMonth Int           @default(1000)
+  maxStorageMb    Int           @default(1024)
+  currentUsers    Int           @default(0)
+  currentAgents   Int           @default(0)
+  currentKbCount  Int           @default(0)
+  ticketsThisMonth Int          @default(0)
+  usedStorageMb   Float         @default(0)
+  priceMonthly    Decimal?      @db.Decimal(10,2)
+  priceYearly     Decimal?      @db.Decimal(10,2)
+  billingEmail    String?
+  trialEndsAt     DateTime?
+  renewsAt        DateTime?
+  expiresAt       DateTime?
+  featureAd       Boolean       @default(false)
+  featureCustomBranding Boolean @default(false)
+  featureApi      Boolean       @default(false)
+  featureAiBot    Boolean       @default(false)
+  featureMultiLang Boolean      @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  createdById     String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("licenses")
+}
+
+// ─────────────────────────────────────────────────────────────
+// TENANT STORAGE CONFIG (super admin sets per tenant)
+// ─────────────────────────────────────────────────────────────
+
+model TenantStorageConfig {
+  id                 String  @id @default(cuid())
+  tenantId           String  @unique
+  maxStorageMb       Int     @default(1024)       // total quota
+  usedStorageBytes   BigInt  @default(0)          // running total
+  maxFileSizeMb      Int     @default(10)         // per-file max
+  allowedExtensions  String? @db.Text             // JSON: ["pdf","png","jpg","docx"]
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_storage_configs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// USERS
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  tenantId      String?
+  email         String    @unique
+  name          String
+  password      String?
+  role          Role      @default(STUDENT)
+  department    String?
+  studentId     String?
+  staffId       String?
+  adObjectId    String?
+  adUpn         String?
+  avatarUrl     String?
+  phone         String?
+  isActive      Boolean   @default(true)
+  isSsoUser     Boolean   @default(false)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant              Tenant?           @relation(fields: [tenantId], references: [id])
+  submittedTickets    Ticket[]          @relation("TicketSubmitter")
+  assignedTickets     Ticket[]          @relation("TicketAgent")
+  activities          TicketActivity[]
+  messages            TicketMessage[]
+  attachments         TicketAttachment[]
+  kbArticles          KbArticle[]
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+  agentCategories     AgentCategory[]
+  agentDepartments    AgentDepartment[]
+
+  @@index([tenantId])
+  @@index([email])
+  @@index([adObjectId])
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────
+// CATEGORY (tree: parentId null = root category)
+// ─────────────────────────────────────────────────────────────
+
+model Category {
+  id          String   @id @default(cuid())
+  tenantId    String
+  parentId    String?                          // null = top-level
+  department  String?                          // IT | STUDENT_SERVICES | FACILITIES | HR (root categories only)
+  name        String
+  description String?
+  color       String   @default("#2563EB")
+  icon        String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent      Category?       @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[]      @relation("CategoryTree")
+  tickets     Ticket[]
+  agentPerms  AgentCategory[]
+
+  @@index([tenantId])
+  @@index([parentId])
+  @@map("categories")
+}
+
+// ─────────────────────────────────────────────────────────────
+// AGENT CATEGORY PERMISSIONS
+// ─────────────────────────────────────────────────────────────
+
+model AgentCategory {
+  id         String   @id @default(cuid())
+  agentId    String
+  categoryId String
+  tenantId   String
+  createdAt  DateTime @default(now())
+
+  agent    User     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, categoryId])
+  @@index([agentId])
+  @@index([tenantId])
+  @@map("agent_categories")
+}
+
+// ─────────────────────────────────────────────────────────────
+// AGENT DEPARTMENT PERMISSIONS
+// ─────────────────────────────────────────────────────────────
+
+model AgentDepartment {
+  id         String   @id @default(cuid())
+  agentId    String
+  department String
+  createdAt  DateTime @default(now())
+
+  agent User @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, department])
+  @@index([agentId])
+  @@map("agent_departments")
+}
+
+// ─────────────────────────────────────────────────────────────
+// TICKETS
+// ─────────────────────────────────────────────────────────────
+
+model Ticket {
+  id               String       @id @default(cuid())
+  ticketNumber     Int          @unique @default(autoincrement())
+  tenantId         String
+  title            String
+  description      String       @db.Text
+  status           TicketStatus @default(OPEN)
+  priority         Priority     @default(MEDIUM)
+  department       String
+  categoryId       String?                         // NEW: optional category
+  categoryPath     String?                         // NEW: "IT Support > Hardware"
+  submitterId      String
+  assigneeId       String?
+  resolvedAt       DateTime?
+  closedAt         DateTime?
+  dueAt            DateTime?
+  tags             String?
+  attachmentCount  Int          @default(0)        // NEW
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  tenant      Tenant             @relation(fields: [tenantId], references: [id])
+  submitter   User               @relation("TicketSubmitter", fields: [submitterId], references: [id])
+  assignee    User?              @relation("TicketAgent", fields: [assigneeId], references: [id])
+  category    Category?          @relation(fields: [categoryId], references: [id])
+  messages    TicketMessage[]
+  activities  TicketActivity[]
+  attachments TicketAttachment[]
+  slaLog      SlaLog?
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([department])
+  @@index([categoryId])
+  @@index([submitterId])
+  @@map("tickets")
+}
+
+model TicketMessage {
+  id              String   @id @default(cuid())
+  ticketId        String
+  authorId        String
+  body            String   @db.Text
+  isInternal      Boolean  @default(false)
+  attachmentCount Int      @default(0)        // NEW
+  createdAt       DateTime @default(now())
+
+  ticket      Ticket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author      User               @relation(fields: [authorId], references: [id])
+  attachments TicketAttachment[]
+
+  @@index([ticketId])
+  @@map("ticket_messages")
+}
+
+// ─────────────────────────────────────────────────────────────
+// TICKET ATTACHMENTS
+// ─────────────────────────────────────────────────────────────
+
+model TicketAttachment {
+  id           String   @id @default(cuid())
+  ticketId     String
+  messageId    String?                          // null = attached at creation
+  uploaderId   String
+  tenantId     String
+  fileName     String
+  fileExt      String
+  mimeType     String
+  sizeBytes    Int
+  storagePath  String                           // disk path / S3 key
+  downloadUrl  String
+  createdAt    DateTime @default(now())
+
+  ticket   Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  message  TicketMessage? @relation(fields: [messageId], references: [id])
+  uploader User           @relation(fields: [uploaderId], references: [id])
+
+  @@index([ticketId])
+  @@index([tenantId])
+  @@map("ticket_attachments")
+}
+
+model TicketActivity {
+  id        String   @id @default(cuid())
+  ticketId  String
+  actorId   String
+  type      String
+  meta      String?  @db.Text
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  actor  User   @relation(fields: [actorId], references: [id])
+
+  @@index([ticketId])
+  @@map("ticket_activities")
+}
+
+model SlaLog {
+  id               String    @id @default(cuid())
+  ticketId         String    @unique
+  firstResponseAt  DateTime?
+  resolvedAt       DateTime?
+  responseBreached Boolean   @default(false)
+  resolveBreached  Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("sla_logs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// KNOWLEDGE BASE
+// ─────────────────────────────────────────────────────────────
+
+model KbArticle {
+  id             String     @id @default(cuid())
+  tenantId       String
+  authorId       String
+  title          String
+  slug           String
+  body           String     @db.LongText
+  department     String?
+  visibleToRoles String?    @default("ALL")
+  tags           String?
+  views          Int        @default(0)
+  isPublished    Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id])
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("kb_articles")
+}
+
+// ─────────────────────────────────────────────────────────────
+// DEPARTMENT CONFIG
+// ─────────────────────────────────────────────────────────────
+
+model DepartmentConfig {
+  id         String     @id @default(cuid())
+  tenantId   String
+  department String
+  label      String
+  icon       String?
+  email      String?
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, department])
+  @@map("department_configs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// SLA CONFIG
+// ─────────────────────────────────────────────────────────────
+
+model SlaConfig {
+  id            String   @id @default(cuid())
+  tenantId      String
+  priority      Priority
+  responseHours Int
+  resolveHours  Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, priority])
+  @@map("sla_configs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  title     String
+  body      String
+  ticketId  String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String?
+  actorId   String
+  action    String
+  target    String?
+  meta      String?  @db.Text
+  ip        String?
+  createdAt DateTime @default(now())
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+  actor  User    @relation(fields: [actorId], references: [id])
+
+  @@index([tenantId])
+  @@index([actorId])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// SMTP CONFIG
+// ─────────────────────────────────────────────────────────────
+
+model SmtpConfig {
+  id            String    @id @default(cuid())
+  tenantId      String    @unique
+  host          String    @default("")
+  port          Int       @default(587)
+  secure        Boolean   @default(false)
+  username      String    @default("")
+  password      String    @default("")
+  fromEmail     String    @default("")
+  fromName      String    @default("EduDesk Helpdesk")
+  replyTo       String?
+  isEnabled     Boolean   @default(false)
+  isVerified    Boolean   @default(false)
+  lastTestedAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("smtp_configs")
+}

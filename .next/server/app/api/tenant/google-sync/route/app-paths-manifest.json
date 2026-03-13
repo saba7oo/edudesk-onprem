@@ -1,0 +1,3 @@
+{
+  "/api/tenant/google-sync/route": "app/api/tenant/google-sync/route.js"
+}

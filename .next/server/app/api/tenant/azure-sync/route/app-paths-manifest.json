@@ -1,0 +1,3 @@
+{
+  "/api/tenant/azure-sync/route": "app/api/tenant/azure-sync/route.js"
+}
