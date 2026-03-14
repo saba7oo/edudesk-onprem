@@ -105,6 +105,7 @@ model Tenant {
   users         User[]
   tickets       Ticket[]
   kbArticles    KbArticle[]
+  usefulLinks   UsefulLink[]
   deptConfigs   DepartmentConfig[]
   categories    Category[]
   slaConfigs    SlaConfig[]
@@ -634,4 +635,26 @@ model SmtpConfig {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("smtp_configs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// USEFUL LINKS
+// ─────────────────────────────────────────────────────────────
+
+model UsefulLink {
+  id          String   @id @default(cuid())
+  tenantId    String
+  title       String
+  url         String   @db.Text
+  icon        String?          // emoji or short label, e.g. "🔗"
+  description String?  @db.Text
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("useful_links")
 }

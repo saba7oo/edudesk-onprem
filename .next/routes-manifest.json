@@ -261,6 +261,12 @@
       "namedRegex": "^/api/tenant/smtp(?:/)?$"
     },
     {
+      "page": "/api/tenant/useful-links",
+      "regex": "^/api/tenant/useful\\-links(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tenant/useful\\-links(?:/)?$"
+    },
+    {
       "page": "/api/tenant/users",
       "regex": "^/api/tenant/users(?:/)?$",
       "routeKeys": {},
@@ -271,6 +277,12 @@
       "regex": "^/api/tickets(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/tickets(?:/)?$"
+    },
+    {
+      "page": "/api/useful-links",
+      "regex": "^/api/useful\\-links(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/useful\\-links(?:/)?$"
     },
     {
       "page": "/api/users",
