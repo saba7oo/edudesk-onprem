@@ -79,6 +79,22 @@
       "namedRegex": "^/api/tickets/(?<nxtPid>[^/]+?)/eligible\\-agents(?:/)?$"
     },
     {
+      "page": "/api/tickets/[id]/manager-approval",
+      "regex": "^/api/tickets/([^/]+?)/manager\\-approval(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/tickets/(?<nxtPid>[^/]+?)/manager\\-approval(?:/)?$"
+    },
+    {
+      "page": "/api/tickets/[id]/manager-notify",
+      "regex": "^/api/tickets/([^/]+?)/manager\\-notify(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/tickets/(?<nxtPid>[^/]+?)/manager\\-notify(?:/)?$"
+    },
+    {
       "page": "/api/tickets/[id]/messages",
       "regex": "^/api/tickets/([^/]+?)/messages(?:/)?$",
       "routeKeys": {
@@ -195,6 +211,12 @@
       "regex": "^/api/tenant/departments(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/tenant/departments(?:/)?$"
+    },
+    {
+      "page": "/api/tenant/dept-admin-departments",
+      "regex": "^/api/tenant/dept\\-admin\\-departments(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tenant/dept\\-admin\\-departments(?:/)?$"
     },
     {
       "page": "/api/tenant/email-templates",

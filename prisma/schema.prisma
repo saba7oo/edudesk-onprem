@@ -69,6 +69,18 @@ enum SsoProvider {
   NONE
 }
 
+enum CategoryType {
+  NORMAL
+  DROPDOWN
+  TEXT_FIELD
+}
+
+enum ManagerApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ─────────────────────────────────────────────────────────────
 // TENANT
 // ─────────────────────────────────────────────────────────────
@@ -246,15 +258,18 @@ model User {
   adUpn         String?
   avatarUrl     String?
   phone         String?
+  isDeptAdmin   Boolean   @default(false)
+  managerId     String?
   isActive      Boolean   @default(true)
   isSsoUser     Boolean   @default(false)
   lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  tenant              Tenant?           @relation(fields: [tenantId], references: [id])
-  submittedTickets    Ticket[]          @relation("TicketSubmitter")
-  assignedTickets     Ticket[]          @relation("TicketAgent")
+  tenant              Tenant?               @relation(fields: [tenantId], references: [id])
+  submittedTickets    Ticket[]              @relation("TicketSubmitter")
+  assignedTickets     Ticket[]              @relation("TicketAgent")
+  requestedApprovalTickets Ticket[]         @relation("TicketManager")
   activities          TicketActivity[]
   messages            TicketMessage[]
   attachments         TicketAttachment[]
@@ -263,6 +278,9 @@ model User {
   auditLogs           AuditLog[]
   agentCategories     AgentCategory[]
   agentDepartments    AgentDepartment[]
+  deptAdminOf         DeptAdminDepartment[]
+  manager             User?                 @relation("UserManager", fields: [managerId], references: [id])
+  reports             User[]                @relation("UserManager")
 
   @@index([tenantId])
   @@index([email])
@@ -281,6 +299,8 @@ model Category {
   department  String?                          // IT | STUDENT_SERVICES | FACILITIES | HR (root categories only)
   name        String
   description String?
+  type            CategoryType @default(NORMAL)
+  dropdownOptions String?      @db.Text    // JSON array of strings, e.g. ["Option A","Option B"]
   color       String   @default("#2563EB")
   icon        String?
   isActive    Boolean  @default(true)
@@ -297,6 +317,25 @@ model Category {
   @@index([tenantId])
   @@index([parentId])
   @@map("categories")
+}
+
+// ─────────────────────────────────────────────────────────────
+// DEPT ADMIN → DEPARTMENT ASSIGNMENTS
+// ─────────────────────────────────────────────────────────────
+
+model DeptAdminDepartment {
+  id         String   @id @default(cuid())
+  adminId    String
+  department String
+  tenantId   String
+  createdAt  DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@unique([adminId, department])
+  @@index([adminId])
+  @@index([tenantId])
+  @@map("dept_admin_departments")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -349,21 +388,30 @@ model Ticket {
   status           TicketStatus @default(OPEN)
   priority         Priority     @default(MEDIUM)
   department       String
-  categoryId       String?                         // NEW: optional category
-  categoryPath     String?                         // NEW: "IT Support > Hardware"
+  categoryId       String?                         // optional category
+  categoryPath     String?                         // "IT Support > Hardware > Printer"
+  categoryDetail   String?                         // value from DROPDOWN or TEXT_FIELD category type
   submitterId      String
   assigneeId       String?
   resolvedAt       DateTime?
   closedAt         DateTime?
   dueAt            DateTime?
   tags             String?
-  attachmentCount  Int          @default(0)        // NEW
+  attachmentCount  Int          @default(0)
+  // Manager approval / notification (staff tickets only)
+  managerApprovalStatus       ManagerApprovalStatus?
+  managerApprovalRequestedAt  DateTime?
+  managerApprovalRespondedAt  DateTime?
+  managerApprovalNote         String?  @db.Text
+  managerNotifiedAt           DateTime?
+  requestedManagerId          String?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
   tenant      Tenant             @relation(fields: [tenantId], references: [id])
   submitter   User               @relation("TicketSubmitter", fields: [submitterId], references: [id])
   assignee    User?              @relation("TicketAgent", fields: [assigneeId], references: [id])
+  requestedManager User?         @relation("TicketManager", fields: [requestedManagerId], references: [id])
   category    Category?          @relation(fields: [categoryId], references: [id])
   messages    TicketMessage[]
   activities  TicketActivity[]
@@ -375,6 +423,7 @@ model Ticket {
   @@index([department])
   @@index([categoryId])
   @@index([submitterId])
+  @@index([requestedManagerId])
   @@map("tickets")
 }
 
