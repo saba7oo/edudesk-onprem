@@ -1,65 +1,81 @@
 -- Migration 5: isDeptAdmin, managerId, visibleToRoles, dept_admin_departments, useful_links
--- Uses IF NOT EXISTS / IF EXISTS so re-running is safe on partially-migrated servers.
+-- Compatible with MySQL 5.7+ (no IF NOT EXISTS on ALTER TABLE)
+-- Uses information_schema checks via PREPARE/EXECUTE for safe re-runs.
 
--- 1. users: isDeptAdmin flag + managerId (manager approval/notification)
-ALTER TABLE `users`
-  ADD COLUMN IF NOT EXISTS `isDeptAdmin` BOOLEAN NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS `managerId`   VARCHAR(191) NULL;
+-- ── 1. users: isDeptAdmin ─────────────────────────────────────
+SET @col = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='isDeptAdmin');
+SET @s = IF(@col=0,'ALTER TABLE `users` ADD COLUMN `isDeptAdmin` BOOLEAN NOT NULL DEFAULT false','SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 
--- 2. users: foreign key for managerId (self-referential)
--- Only add if the constraint does not already exist
-SET @fk_exists = (
-  SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
-  WHERE CONSTRAINT_SCHEMA = DATABASE()
-    AND TABLE_NAME        = 'users'
-    AND CONSTRAINT_NAME   = 'users_managerId_fkey'
-);
-SET @sql = IF(@fk_exists = 0,
+-- ── 2. users: managerId ───────────────────────────────────────
+SET @col = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='managerId');
+SET @s = IF(@col=0,'ALTER TABLE `users` ADD COLUMN `managerId` VARCHAR(191) NULL','SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- ── 3. users: managerId foreign key ──────────────────────────
+SET @fk = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='users' AND CONSTRAINT_NAME='users_managerId_fkey');
+SET @s = IF(@fk=0,
   'ALTER TABLE `users` ADD CONSTRAINT `users_managerId_fkey` FOREIGN KEY (`managerId`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE',
-  'SELECT 1'
-);
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+  'SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 
--- 3. tickets: manager approval fields
-ALTER TABLE `tickets`
-  ADD COLUMN IF NOT EXISTS `managerApprovalStatus`      ENUM('PENDING','APPROVED','REJECTED') NULL,
-  ADD COLUMN IF NOT EXISTS `managerApprovalRequestedAt` DATETIME(3) NULL,
-  ADD COLUMN IF NOT EXISTS `managerApprovalRespondedAt` DATETIME(3) NULL,
-  ADD COLUMN IF NOT EXISTS `managerApprovalNote`        LONGTEXT NULL,
-  ADD COLUMN IF NOT EXISTS `managerNotifiedAt`          DATETIME(3) NULL,
-  ADD COLUMN IF NOT EXISTS `requestedManagerId`         VARCHAR(191) NULL;
+-- ── 4. tickets: manager approval fields ──────────────────────
+SET @col = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='tickets' AND COLUMN_NAME='managerApprovalStatus');
+SET @s = IF(@col=0,
+  "ALTER TABLE `tickets` ADD COLUMN `managerApprovalStatus` ENUM('PENDING','APPROVED','REJECTED') NULL",
+  'SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 
--- tickets: index on requestedManagerId
-SET @idx_exists = (
-  SELECT COUNT(*) FROM information_schema.STATISTICS
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME   = 'tickets'
-    AND INDEX_NAME   = 'tickets_requestedManagerId_idx'
-);
-SET @sql = IF(@idx_exists = 0,
-  'ALTER TABLE `tickets` ADD INDEX `tickets_requestedManagerId_idx` (`requestedManagerId`)',
-  'SELECT 1'
-);
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @col = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='tickets' AND COLUMN_NAME='managerApprovalRequestedAt');
+SET @s = IF(@col=0,'ALTER TABLE `tickets` ADD COLUMN `managerApprovalRequestedAt` DATETIME(3) NULL','SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 
--- tickets: foreign key for requestedManagerId
-SET @fk_exists = (
-  SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
-  WHERE CONSTRAINT_SCHEMA = DATABASE()
-    AND TABLE_NAME        = 'tickets'
-    AND CONSTRAINT_NAME   = 'tickets_requestedManagerId_fkey'
-);
-SET @sql = IF(@fk_exists = 0,
+SET @col = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='tickets' AND COLUMN_NAME='managerApprovalRespondedAt');
+SET @s = IF(@col=0,'ALTER TABLE `tickets` ADD COLUMN `managerApprovalRespondedAt` DATETIME(3) NULL','SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @col = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='tickets' AND COLUMN_NAME='managerApprovalNote');
+SET @s = IF(@col=0,'ALTER TABLE `tickets` ADD COLUMN `managerApprovalNote` LONGTEXT NULL','SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @col = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='tickets' AND COLUMN_NAME='managerNotifiedAt');
+SET @s = IF(@col=0,'ALTER TABLE `tickets` ADD COLUMN `managerNotifiedAt` DATETIME(3) NULL','SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @col = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='tickets' AND COLUMN_NAME='requestedManagerId');
+SET @s = IF(@col=0,'ALTER TABLE `tickets` ADD COLUMN `requestedManagerId` VARCHAR(191) NULL','SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- tickets: requestedManagerId index
+SET @idx = (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='tickets' AND INDEX_NAME='tickets_requestedManagerId_idx');
+SET @s = IF(@idx=0,'ALTER TABLE `tickets` ADD INDEX `tickets_requestedManagerId_idx` (`requestedManagerId`)','SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- tickets: requestedManagerId foreign key
+SET @fk = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='tickets' AND CONSTRAINT_NAME='tickets_requestedManagerId_fkey');
+SET @s = IF(@fk=0,
   'ALTER TABLE `tickets` ADD CONSTRAINT `tickets_requestedManagerId_fkey` FOREIGN KEY (`requestedManagerId`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE',
-  'SELECT 1'
-);
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+  'SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 
--- 4. kb_articles: visibleToRoles column
-ALTER TABLE `kb_articles`
-  ADD COLUMN IF NOT EXISTS `visibleToRoles` VARCHAR(191) NULL DEFAULT 'ALL';
+-- ── 5. kb_articles: visibleToRoles ───────────────────────────
+SET @col = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='kb_articles' AND COLUMN_NAME='visibleToRoles');
+SET @s = IF(@col=0,"ALTER TABLE `kb_articles` ADD COLUMN `visibleToRoles` VARCHAR(191) NULL DEFAULT 'ALL'",'SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 
--- 5. dept_admin_departments table
+-- ── 6. dept_admin_departments table ──────────────────────────
 CREATE TABLE IF NOT EXISTS `dept_admin_departments` (
   `id`         VARCHAR(191) NOT NULL,
   `adminId`    VARCHAR(191) NOT NULL,
@@ -72,20 +88,14 @@ CREATE TABLE IF NOT EXISTS `dept_admin_departments` (
   PRIMARY KEY  (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- dept_admin_departments: foreign key
-SET @fk_exists = (
-  SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
-  WHERE CONSTRAINT_SCHEMA = DATABASE()
-    AND TABLE_NAME        = 'dept_admin_departments'
-    AND CONSTRAINT_NAME   = 'dept_admin_departments_adminId_fkey'
-);
-SET @sql = IF(@fk_exists = 0,
+SET @fk = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='dept_admin_departments' AND CONSTRAINT_NAME='dept_admin_departments_adminId_fkey');
+SET @s = IF(@fk=0,
   'ALTER TABLE `dept_admin_departments` ADD CONSTRAINT `dept_admin_departments_adminId_fkey` FOREIGN KEY (`adminId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE',
-  'SELECT 1'
-);
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+  'SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 
--- 6. useful_links table
+-- ── 7. useful_links table ─────────────────────────────────────
 CREATE TABLE IF NOT EXISTS `useful_links` (
   `id`          VARCHAR(191) NOT NULL,
   `tenantId`    VARCHAR(191) NOT NULL,
@@ -101,15 +111,9 @@ CREATE TABLE IF NOT EXISTS `useful_links` (
   PRIMARY KEY   (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- useful_links: foreign key
-SET @fk_exists = (
-  SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
-  WHERE CONSTRAINT_SCHEMA = DATABASE()
-    AND TABLE_NAME        = 'useful_links'
-    AND CONSTRAINT_NAME   = 'useful_links_tenantId_fkey'
-);
-SET @sql = IF(@fk_exists = 0,
+SET @fk = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='useful_links' AND CONSTRAINT_NAME='useful_links_tenantId_fkey');
+SET @s = IF(@fk=0,
   'ALTER TABLE `useful_links` ADD CONSTRAINT `useful_links_tenantId_fkey` FOREIGN KEY (`tenantId`) REFERENCES `tenants`(`id`) ON DELETE CASCADE ON UPDATE CASCADE',
-  'SELECT 1'
-);
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+  'SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
