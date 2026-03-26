@@ -1,21 +1,20 @@
 // ══════════════════════════════════════════════════════════════
 //  EduDesk OnPrem — Next.js Config
 //  CloudTitans © 2026
-//
-//  Used by publish-onprem.sh during the onprem build.
-//  Replaces next.config.js in the temp build directory.
 // ══════════════════════════════════════════════════════════════
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Mark this as an onprem build — used by instrumentation.ts
-  // and middleware.onprem.ts to activate license enforcement
   env: {
     NEXT_PUBLIC_MODE: 'onprem',
   },
-
-  // instrumentation.ts is enabled by default in Next.js 15+
-  // no experimental flag needed
+  // Disable Turbopack for on-prem builds — use stable Webpack instead.
+  // Turbopack has a known async-module deps bug in Next.js 16.x that
+  // causes TypeError: Cannot read properties of undefined (reading 'map')
+  // on server startup.
+  experimental: {
+    turbopack: false,
+  },
 }
 
 module.exports = nextConfig
