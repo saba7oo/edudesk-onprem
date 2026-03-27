@@ -191,6 +191,33 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/api/system/update/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/system/update">> = Specific
+  const handler = {} as typeof import("../../src/app/api/system/update/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/system/update/status/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/system/update/status">> = Specific
+  const handler = {} as typeof import("../../src/app/api/system/update/status/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/system/version/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/system/version">> = Specific
+  const handler = {} as typeof import("../../src/app/api/system/version/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/api/tenant/ad-config/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/tenant/ad-config">> = Specific

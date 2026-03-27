@@ -171,6 +171,24 @@
       "namedRegex": "^/api/reports(?:/)?$"
     },
     {
+      "page": "/api/system/update",
+      "regex": "^/api/system/update(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/system/update(?:/)?$"
+    },
+    {
+      "page": "/api/system/update/status",
+      "regex": "^/api/system/update/status(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/system/update/status(?:/)?$"
+    },
+    {
+      "page": "/api/system/version",
+      "regex": "^/api/system/version(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/system/version(?:/)?$"
+    },
+    {
       "page": "/api/tenant/ad-config",
       "regex": "^/api/tenant/ad\\-config(?:/)?$",
       "routeKeys": {},
