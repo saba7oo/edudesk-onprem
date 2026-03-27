@@ -2,6 +2,7 @@
   "/_global-error/page": "/_global-error",
   "/_not-found/page": "/_not-found",
   "/api/auth/[...nextauth]/route": "/api/auth/[...nextauth]",
+  "/api/auth/azure/callback/route": "/api/auth/azure/callback",
   "/api/departments/route": "/api/departments",
   "/api/institution/ad-config/route": "/api/institution/ad-config",
   "/api/institution/ad-sync/route": "/api/institution/ad-sync",

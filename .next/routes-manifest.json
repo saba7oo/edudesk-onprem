@@ -123,6 +123,12 @@
       "namedRegex": "^/_not\\-found(?:/)?$"
     },
     {
+      "page": "/api/auth/azure/callback",
+      "regex": "^/api/auth/azure/callback(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/azure/callback(?:/)?$"
+    },
+    {
       "page": "/api/departments",
       "regex": "^/api/departments(?:/)?$",
       "routeKeys": {},
