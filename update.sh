@@ -133,12 +133,8 @@ rm -rf /tmp/edudesk-update/
 mkdir -p /tmp/edudesk-update
 tar -xzf /tmp/edudesk-update.tar.gz -C /tmp/edudesk-update --strip-components=1
 
-# Sync into app dir — preserve .env and LICENSE.key
-rsync -a \
-  --exclude='.env' \
-  --exclude='LICENSE.key' \
-  --exclude='node_modules/' \
-  /tmp/edudesk-update/ $APP_DIR/
+# Copy into app dir — .env / LICENSE.key / node_modules are gitignored so never in tarball
+cp -a /tmp/edudesk-update/. $APP_DIR/
 
 # Cleanup
 rm -rf /tmp/edudesk-update /tmp/edudesk-update.tar.gz
