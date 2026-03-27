@@ -6,18 +6,23 @@
 #  Run once on a fresh Ubuntu server to install everything.
 #  Requires: Ubuntu 20.04+ | Root or sudo access
 #
-#  Usage:
-#    sudo bash setup.sh                   — Interactive (asks SSL type)
-#    sudo bash setup.sh --ssl selfsigned  — Self-signed (internal / no DNS)
-#    sudo bash setup.sh --ssl letsencrypt — Let's Encrypt (public domain)
-#    sudo bash setup.sh --ssl commercial  — Your own SSL certificate
-#    sudo bash setup.sh --upgrade-ssl     — Replace/renew SSL certificate
+#  Install command (run as root):
+#    apt install -y git && \
+#    git clone https://github.com/saba7oo/edudesk-onprem.git /tmp/edudesk-setup && \
+#    bash /tmp/edudesk-setup/setup.sh --key /path/to/LICENSE.key
+#
+#  Flags:
+#    --key  /path/to/LICENSE.key  — License key file (skips interactive prompt)
+#    --ssl  selfsigned            — Self-signed (internal / no DNS)
+#    --ssl  letsencrypt           — Let's Encrypt HTTP (port 80 open)
+#    --ssl  letsencrypt-dns       — Let's Encrypt DNS challenge (no open ports needed)
+#    --ssl  commercial            — Your own SSL certificate
+#    --upgrade-ssl                — Replace/renew SSL certificate
 # ══════════════════════════════════════════════════════════════
 
 set -e
 
 APP_DIR="/home/edudesk/edudesk"
-DEPLOY_KEY_PATH="$HOME/.ssh/edudesk-deploy-key"
 BACKUP_DIR="/home/edudesk/backups"
 SELFSIGNED_CERT="/etc/ssl/certs/edudesk-selfsigned.crt"
 SELFSIGNED_KEY="/etc/ssl/private/edudesk-selfsigned.key"
@@ -49,6 +54,9 @@ NC='\033[0m'
 UPGRADE_SSL=false
 SSL_MODE=""
 
+LICENSE_PATH_ARG=""
+DOMAIN_ARG=""
+DB_PASS_ARG=""
 ARGS=("$@")
 for i in "${!ARGS[@]}"; do
   case "${ARGS[$i]}" in
@@ -56,6 +64,18 @@ for i in "${!ARGS[@]}"; do
     --ssl)
       next=$((i+1))
       if [ -n "${ARGS[$next]}" ]; then SSL_MODE="${ARGS[$next]}"; fi
+      ;;
+    --key)
+      next=$((i+1))
+      if [ -n "${ARGS[$next]}" ]; then LICENSE_PATH_ARG="${ARGS[$next]}"; fi
+      ;;
+    --domain)
+      next=$((i+1))
+      if [ -n "${ARGS[$next]}" ]; then DOMAIN_ARG="${ARGS[$next]}"; fi
+      ;;
+    --db-pass)
+      next=$((i+1))
+      if [ -n "${ARGS[$next]}" ]; then DB_PASS_ARG="${ARGS[$next]}"; fi
       ;;
   esac
 done
@@ -162,32 +182,36 @@ if [ "$UPGRADE_SSL" = true ]; then
   echo ""
   echo -e "  ${BOLD}Upgrade to which SSL type?${NC}"
   echo ""
-  echo -e "  ${CYAN}[1]${NC} Let's Encrypt  — Free, auto-renewing (DNS must point here)"
-  echo -e "  ${CYAN}[2]${NC} Commercial SSL — Your own certificate (DigiCert, Comodo, etc.)"
-  echo -e "  ${CYAN}[3]${NC} Renew commercial cert — Replace expired/expiring commercial cert"
+  echo -e "  ${CYAN}[1]${NC} Let's Encrypt HTTP — Free, auto-renewing (port 80 must be open)"
+  echo -e "  ${CYAN}[2]${NC} Let's Encrypt DNS  — Free, via DNS TXT record (no open ports needed)"
+  echo -e "  ${CYAN}[3]${NC} Commercial SSL     — Your own certificate (DigiCert, Comodo, etc.)"
+  echo -e "  ${CYAN}[4]${NC} Renew commercial   — Replace expired/expiring commercial cert"
   echo ""
-  read -p "  Enter choice [1, 2 or 3]: " UPGRADE_CHOICE
+  read -p "  Enter choice [1, 2, 3 or 4]: " UPGRADE_CHOICE
   echo ""
 
   case "$UPGRADE_CHOICE" in
     1) UPGRADE_TARGET="letsencrypt" ;;
-    2|3) UPGRADE_TARGET="commercial" ;;
+    2) UPGRADE_TARGET="letsencrypt-dns" ;;
+    3|4) UPGRADE_TARGET="commercial" ;;
     *) echo -e "${RED}❌ Invalid choice.${NC}"; exit 1 ;;
   esac
 
-  if [ "$UPGRADE_TARGET" = "letsencrypt" ]; then
+  # Install certbot if needed
+  if [ "$UPGRADE_TARGET" = "letsencrypt" ] || [ "$UPGRADE_TARGET" = "letsencrypt-dns" ]; then
     read -p "  Admin email for Let's Encrypt: " EMAIL
+    if ! command -v certbot &> /dev/null; then
+      echo -e "${BOLD}📦 Installing Certbot...${NC}"
+      apt-get install -y certbot python3-certbot-nginx -qq
+    fi
+  fi
+
+  if [ "$UPGRADE_TARGET" = "letsencrypt" ]; then
     echo ""
     echo -e "${YELLOW}  ⚠️  DNS A record for ${BOLD}$DOMAIN${NC}${YELLOW} must point to this server.${NC}"
     echo -e "${YELLOW}  ⚠️  Ports 80 and 443 must be open.${NC}"
     echo ""
     read -p "  Press ENTER when DNS is ready: "
-
-    # Install certbot if missing
-    if ! command -v certbot &> /dev/null; then
-      echo -e "${BOLD}📦 Installing Certbot...${NC}"
-      apt-get install -y certbot python3-certbot-nginx -qq
-    fi
 
     # Reset nginx to plain HTTP so certbot can take over
     cat > /etc/nginx/sites-available/edudesk << EOF
@@ -220,11 +244,73 @@ EOF
       --redirect \
       -q
 
-    # Clean up old self-signed or commercial certs
     rm -f "$SELFSIGNED_CERT" "$SELFSIGNED_KEY"
     rm -f "$COMMERCIAL_CERT" "$COMMERCIAL_KEY"
-
     sed -i "s|SSL_MODE=.*|SSL_MODE=letsencrypt|" "$APP_DIR/.env" 2>/dev/null || true
+
+  elif [ "$UPGRADE_TARGET" = "letsencrypt-dns" ]; then
+    echo ""
+    echo -e "${BOLD}${CYAN}════════════════════════════════════════════${NC}"
+    echo -e "${BOLD}${CYAN}   Let's Encrypt — DNS Challenge            ${NC}"
+    echo -e "${BOLD}${CYAN}════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "   Certbot will display a ${BOLD}TXT record${NC} you must add to your DNS."
+    echo -e "   ${CYAN}No open ports required — works behind any firewall.${NC}"
+    echo ""
+    read -p "  Press ENTER to start the DNS challenge: "
+    echo ""
+
+    certbot certonly \
+      --manual \
+      --preferred-challenges dns \
+      --email "$EMAIL" \
+      --agree-tos \
+      --no-eff-email \
+      -d "$DOMAIN"
+
+    # Update nginx with full SSL config using the new cert
+    cat > /etc/nginx/sites-available/edudesk << EOF
+server {
+    listen 80;
+    server_name $DOMAIN;
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name $DOMAIN;
+
+    ssl_certificate     /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    location / {
+        proxy_pass         http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade \$http_upgrade;
+        proxy_set_header   Connection 'upgrade';
+        proxy_set_header   Host \$host;
+        proxy_set_header   X-Real-IP \$remote_addr;
+        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+        client_max_body_size 50M;
+    }
+}
+EOF
+    nginx -t -q && systemctl reload nginx
+
+    rm -f "$SELFSIGNED_CERT" "$SELFSIGNED_KEY"
+    rm -f "$COMMERCIAL_CERT" "$COMMERCIAL_KEY"
+    sed -i "s|SSL_MODE=.*|SSL_MODE=letsencrypt-dns|" "$APP_DIR/.env" 2>/dev/null || true
+
+    echo -e "${GREEN}✅ DNS challenge certificate installed${NC}"
+    echo ""
+    echo -e "   ${YELLOW}⚠️  Remember to renew manually before 90 days:${NC}"
+    echo -e "   ${BOLD}   certbot renew --cert-name $DOMAIN --manual --preferred-challenges dns${NC}"
 
   else
     # Commercial upgrade
@@ -300,7 +386,11 @@ echo ""
 echo -e "${BOLD}📋 Please provide the following information:${NC}"
 echo ""
 
-read -p "  Domain name (e.g. helpdesk.university.edu): " DOMAIN
+if [ -n "$DOMAIN_ARG" ]; then
+  DOMAIN="$DOMAIN_ARG"
+else
+  read -p "  Domain name (e.g. helpdesk.university.edu): " DOMAIN
+fi
 
 # ── SSL Mode selection ─────────────────────────────────────────
 if [ -z "$SSL_MODE" ]; then
@@ -309,38 +399,46 @@ if [ -z "$SSL_MODE" ]; then
   echo ""
   echo -e "  ${CYAN}[1]${NC} Self-signed   — Internal use / DNS not ready"
   echo -e "      (Browser will show a security warning — expected)"
-  echo -e "  ${CYAN}[2]${NC} Let's Encrypt — Free, auto-renewing (DNS must point here)"
-  echo -e "  ${CYAN}[3]${NC} Commercial    — Your own certificate (DigiCert, Comodo, etc.)"
+  echo -e "  ${CYAN}[2]${NC} Let's Encrypt HTTP  — Free, auto-renewing (port 80 must be open)"
+  echo -e "  ${CYAN}[3]${NC} Let's Encrypt DNS   — Free, via DNS TXT record (no open ports needed)"
+  echo -e "  ${CYAN}[4]${NC} Commercial          — Your own certificate (DigiCert, Comodo, etc.)"
   echo ""
-  read -p "  Enter choice [1, 2 or 3]: " SSL_CHOICE
+  read -p "  Enter choice [1, 2, 3 or 4]: " SSL_CHOICE
   echo ""
 
   case "$SSL_CHOICE" in
     1) SSL_MODE="selfsigned" ;;
     2) SSL_MODE="letsencrypt" ;;
-    3) SSL_MODE="commercial" ;;
+    3) SSL_MODE="letsencrypt-dns" ;;
+    4) SSL_MODE="commercial" ;;
     *) echo -e "${RED}❌ Invalid choice. Run the script again.${NC}"; exit 1 ;;
   esac
 fi
 
-# Email only needed for Let's Encrypt
+# Email needed for Let's Encrypt (both HTTP and DNS)
 EMAIL=""
-if [ "$SSL_MODE" = "letsencrypt" ]; then
+if [ "$SSL_MODE" = "letsencrypt" ] || [ "$SSL_MODE" = "letsencrypt-dns" ]; then
   read -p "  Admin email (for SSL certificate):          " EMAIL
 fi
 
-read -e -p "  Path to your LICENSE.key file:              " LICENSE_PATH
+if [ -n "$LICENSE_PATH_ARG" ]; then
+  LICENSE_PATH="$LICENSE_PATH_ARG"
+else
+  read -e -p "  Path to your LICENSE.key file:              " LICENSE_PATH
+fi
 
 echo ""
-read -s -p "  Choose a MySQL password for EduDesk:       " DB_PASS
-echo ""
-read -s -p "  Confirm MySQL password:                    " DB_PASS_CONFIRM
-echo ""
-
-# Validate passwords match
-if [ "$DB_PASS" != "$DB_PASS_CONFIRM" ]; then
-  echo -e "${RED}❌ Passwords do not match. Please run the script again.${NC}"
-  exit 1
+if [ -n "$DB_PASS_ARG" ]; then
+  DB_PASS="$DB_PASS_ARG"
+else
+  read -s -p "  Choose a MySQL password for EduDesk:       " DB_PASS
+  echo ""
+  read -s -p "  Confirm MySQL password:                    " DB_PASS_CONFIRM
+  echo ""
+  if [ "$DB_PASS" != "$DB_PASS_CONFIRM" ]; then
+    echo -e "${RED}❌ Passwords do not match. Please run the script again.${NC}"
+    exit 1
+  fi
 fi
 
 # Validate license file exists
@@ -353,9 +451,10 @@ echo ""
 echo -e "  ${BOLD}Summary:${NC}"
 echo -e "   Domain   : ${BOLD}$DOMAIN${NC}"
 case "$SSL_MODE" in
-  selfsigned)  echo -e "   SSL Type : ${BOLD}Self-signed (internal)${NC}" ;;
-  letsencrypt) echo -e "   SSL Type : ${BOLD}Let's Encrypt${NC}" ;;
-  commercial)  echo -e "   SSL Type : ${BOLD}Commercial certificate${NC}" ;;
+  selfsigned)      echo -e "   SSL Type : ${BOLD}Self-signed (internal)${NC}" ;;
+  letsencrypt)     echo -e "   SSL Type : ${BOLD}Let's Encrypt (HTTP challenge)${NC}" ;;
+  letsencrypt-dns) echo -e "   SSL Type : ${BOLD}Let's Encrypt (DNS challenge)${NC}" ;;
+  commercial)      echo -e "   SSL Type : ${BOLD}Commercial certificate${NC}" ;;
 esac
 echo ""
 echo -e "${CYAN}════════════════════════════════════════════${NC}"
@@ -388,8 +487,8 @@ if ! command -v nginx &> /dev/null; then
 fi
 echo -e "   ${GREEN}✓${NC} Nginx"
 
-# Certbot — only for Let's Encrypt
-if [ "$SSL_MODE" = "letsencrypt" ]; then
+# Certbot — for any Let's Encrypt mode
+if [ "$SSL_MODE" = "letsencrypt" ] || [ "$SSL_MODE" = "letsencrypt-dns" ]; then
   if ! command -v certbot &> /dev/null; then
     apt-get install -y certbot python3-certbot-nginx -qq
   fi
@@ -492,75 +591,7 @@ echo ""
 echo -e "${CYAN}════════════════════════════════════════════${NC}"
 
 # ══════════════════════════════════════════════════════════════
-# STEP 4 — Deploy Key & Repo Access
-# ══════════════════════════════════════════════════════════════
-echo ""
-echo -e "${BOLD}🔑 Setting up repository access...${NC}"
-echo ""
-
-if [ -f "$DEPLOY_KEY_PATH" ]; then
-  echo -e "${YELLOW}ℹ️  A deploy key was already generated for this server.${NC}"
-  echo -e "   If already shared with CloudTitans, press ENTER to continue."
-  echo -e "   If not, share the key below first."
-  echo ""
-else
-  mkdir -p ~/.ssh
-  ssh-keygen -t ed25519 -C "edudesk-$(hostname)-$(date +%Y%m%d)" \
-             -f $DEPLOY_KEY_PATH -N "" -q
-  echo -e "${GREEN}✅ Deploy key generated${NC}"
-  echo ""
-fi
-
-echo -e "${BOLD}${CYAN}════════════════════════════════════════════${NC}"
-echo -e "${BOLD}${CYAN}  SHARE THIS KEY WITH CLOUDTITANS SUPPORT   ${NC}"
-echo -e "${BOLD}${CYAN}════════════════════════════════════════════${NC}"
-echo ""
-cat "$DEPLOY_KEY_PATH.pub"
-echo ""
-echo -e "${BOLD}${CYAN}════════════════════════════════════════════${NC}"
-echo ""
-echo -e "  📧  Email    : ${BOLD}support@ctitans.com${NC}"
-echo ""
-echo -e "  Once CloudTitans confirms access is granted,"
-echo -e "  press ENTER to continue..."
-echo ""
-read -p "  Press ENTER when access is confirmed: "
-
-mkdir -p ~/.ssh
-cat > ~/.ssh/config << EOF
-
-Host github-edudesk
-    HostName github.com
-    User git
-    IdentityFile $DEPLOY_KEY_PATH
-    IdentitiesOnly yes
-    StrictHostKeyChecking no
-EOF
-chmod 600 ~/.ssh/config
-
-echo ""
-echo -e "${BOLD}🔍 Testing repository access...${NC}"
-
-while true; do
-  SSH_TEST=$(ssh -T git@github-edudesk 2>&1 || true)
-  if echo "$SSH_TEST" | grep -q "saba7oo"; then
-    echo -e "${GREEN}✅ Repository access confirmed!${NC}"
-    break
-  else
-    echo ""
-    echo -e "${RED}❌ Access not granted yet.${NC}"
-    echo -e "   Make sure you shared the key and CloudTitans confirmed."
-    echo ""
-    read -p "  Press ENTER to try again, or Ctrl+C to cancel: "
-    echo -e "${BOLD}🔍 Retrying...${NC}"
-  fi
-done
-
-echo ""
-echo -e "${CYAN}════════════════════════════════════════════${NC}"
-
-# ══════════════════════════════════════════════════════════════
-# STEP 5 — Clone Repository
+# STEP 4 — Clone Repository
 # ══════════════════════════════════════════════════════════════
 echo ""
 echo -e "${BOLD}📥 Cloning EduDesk...${NC}"
@@ -572,7 +603,7 @@ fi
 
 if [ ! -d "$APP_DIR" ]; then
   mkdir -p /home/edudesk
-  git clone git@github-edudesk:saba7oo/edudesk-onprem.git $APP_DIR -q
+  git clone https://github.com/saba7oo/edudesk-onprem.git $APP_DIR -q
   echo -e "${GREEN}✅ Repository cloned${NC}"
 else
   echo -e "${YELLOW}ℹ️  Directory already exists, skipping clone${NC}"
@@ -629,7 +660,7 @@ echo ""
 echo -e "${BOLD}⚙️  Configuring Nginx...${NC}"
 
 if [ "$SSL_MODE" = "letsencrypt" ]; then
-  # Plain HTTP — certbot will rewrite this with SSL block
+  # Plain HTTP — certbot --nginx will rewrite this with SSL block
   cat > /etc/nginx/sites-available/edudesk << EOF
 server {
     listen 80;
@@ -650,11 +681,13 @@ server {
 }
 EOF
 else
-  # Self-signed or commercial: write full SSL block now
-  # Cert paths differ between modes — set them here
+  # DNS challenge, self-signed, or commercial — write full SSL config now
   if [ "$SSL_MODE" = "selfsigned" ]; then
     NGINX_CERT="$SELFSIGNED_CERT"
     NGINX_KEY="$SELFSIGNED_KEY"
+  elif [ "$SSL_MODE" = "letsencrypt-dns" ]; then
+    NGINX_CERT="/etc/letsencrypt/live/$DOMAIN/fullchain.pem"
+    NGINX_KEY="/etc/letsencrypt/live/$DOMAIN/privkey.pem"
   else
     NGINX_CERT="$COMMERCIAL_CERT"
     NGINX_KEY="$COMMERCIAL_KEY"
@@ -697,8 +730,8 @@ fi
 ln -sf /etc/nginx/sites-available/edudesk /etc/nginx/sites-enabled/edudesk
 rm -f /etc/nginx/sites-enabled/default
 
-# For letsencrypt: reload now (plain HTTP config, no cert needed yet)
-# For selfsigned/commercial: skip reload — cert doesn't exist yet, STEP 8 will reload
+# HTTP Let's Encrypt: reload now (plain HTTP config, certbot handles the rest)
+# DNS/selfsigned/commercial: skip reload — cert doesn't exist yet, STEP 8 will reload
 if [ "$SSL_MODE" = "letsencrypt" ]; then
   nginx -t -q && systemctl reload nginx
 fi
@@ -745,6 +778,49 @@ case "$SSL_MODE" in
       --redirect \
       -q
     echo -e "${GREEN}✅ SSL certificate obtained (auto-renewal enabled)${NC}"
+    ;;
+
+  letsencrypt-dns)
+    echo ""
+    echo -e "${BOLD}${CYAN}════════════════════════════════════════════${NC}"
+    echo -e "${BOLD}${CYAN}   Let's Encrypt — DNS Challenge            ${NC}"
+    echo -e "${BOLD}${CYAN}════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "   Certbot will display a ${BOLD}TXT record${NC} you must add to your DNS."
+    echo -e "   ${CYAN}No open ports required — works behind any firewall.${NC}"
+    echo ""
+    echo -e "   ${BOLD}What to do:${NC}"
+    echo -e "   1. Certbot will show:  _acme-challenge.$DOMAIN  TXT  \"<value>\""
+    echo -e "   2. Add that TXT record in your DNS control panel"
+    echo -e "   3. Wait 1-2 minutes for DNS to propagate"
+    echo -e "   4. Press ENTER in this terminal to let certbot verify"
+    echo ""
+    read -p "  Press ENTER to start the DNS challenge: "
+    echo ""
+
+    certbot certonly \
+      --manual \
+      --preferred-challenges dns \
+      --email "$EMAIL" \
+      --agree-tos \
+      --no-eff-email \
+      -d "$DOMAIN"
+
+    # Configure nginx with the obtained cert
+    nginx -t -q && systemctl reload nginx
+    echo -e "${GREEN}✅ SSL certificate obtained${NC}"
+    echo ""
+    echo -e "   ${YELLOW}⚠️  DNS challenge certificates require manual renewal every 90 days.${NC}"
+    echo -e "   ${YELLOW}   Run the renewal command before expiry:${NC}"
+    echo -e "   ${BOLD}   certbot renew --cert-name $DOMAIN --manual --preferred-challenges dns${NC}"
+    echo ""
+
+    # Add a cron reminder 60 days from now
+    REMIND_DATE=$(date -d "+60 days" "+%d %m")
+    REMIND_DAY=$(echo $REMIND_DATE | cut -d' ' -f1)
+    REMIND_MON=$(echo $REMIND_DATE | cut -d' ' -f2)
+    (crontab -l 2>/dev/null; echo "0 9 $REMIND_DAY $REMIND_MON * echo '⚠️  EduDesk SSL certificate for $DOMAIN expires in ~30 days. Run: certbot renew --cert-name $DOMAIN --manual --preferred-challenges dns' | wall") | crontab -
+    echo -e "   ${CYAN}ℹ️  Renewal reminder set for 60 days from now.${NC}"
     ;;
 
   commercial)
