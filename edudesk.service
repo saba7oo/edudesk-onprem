@@ -1,0 +1,21 @@
+[Unit]
+Description=EduDesk On-Prem Helpdesk
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=edudesk
+WorkingDirectory=/home/edudesk/edudesk
+ExecStart=/usr/bin/npm run start
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=edudesk
+
+# Environment — override in /etc/edudesk.env or inline below
+EnvironmentFile=-/etc/edudesk.env
+
+[Install]
+WantedBy=multi-user.target
