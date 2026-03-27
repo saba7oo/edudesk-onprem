@@ -6,18 +6,22 @@
 #  Run once on a fresh Ubuntu server to install everything.
 #  Requires: Ubuntu 20.04+ | Root or sudo access
 #
-#  Usage:
-#    sudo bash setup.sh                   — Interactive (asks SSL type)
-#    sudo bash setup.sh --ssl selfsigned  — Self-signed (internal / no DNS)
-#    sudo bash setup.sh --ssl letsencrypt — Let's Encrypt (public domain)
-#    sudo bash setup.sh --ssl commercial  — Your own SSL certificate
-#    sudo bash setup.sh --upgrade-ssl     — Replace/renew SSL certificate
+#  Install command (run as root):
+#    apt install -y git && \
+#    git clone https://github.com/saba7oo/edudesk-onprem.git /tmp/edudesk-setup && \
+#    bash /tmp/edudesk-setup/setup.sh --key /path/to/LICENSE.key
+#
+#  Flags:
+#    --key  /path/to/LICENSE.key  — License key file (skips interactive prompt)
+#    --ssl  selfsigned            — Self-signed (internal / no DNS)
+#    --ssl  letsencrypt           — Let's Encrypt (public domain)
+#    --ssl  commercial            — Your own SSL certificate
+#    --upgrade-ssl                — Replace/renew SSL certificate
 # ══════════════════════════════════════════════════════════════
 
 set -e
 
 APP_DIR="/home/edudesk/edudesk"
-DEPLOY_KEY_PATH="$HOME/.ssh/edudesk-deploy-key"
 BACKUP_DIR="/home/edudesk/backups"
 SELFSIGNED_CERT="/etc/ssl/certs/edudesk-selfsigned.crt"
 SELFSIGNED_KEY="/etc/ssl/private/edudesk-selfsigned.key"
@@ -49,6 +53,9 @@ NC='\033[0m'
 UPGRADE_SSL=false
 SSL_MODE=""
 
+LICENSE_PATH_ARG=""
+DOMAIN_ARG=""
+DB_PASS_ARG=""
 ARGS=("$@")
 for i in "${!ARGS[@]}"; do
   case "${ARGS[$i]}" in
@@ -56,6 +63,18 @@ for i in "${!ARGS[@]}"; do
     --ssl)
       next=$((i+1))
       if [ -n "${ARGS[$next]}" ]; then SSL_MODE="${ARGS[$next]}"; fi
+      ;;
+    --key)
+      next=$((i+1))
+      if [ -n "${ARGS[$next]}" ]; then LICENSE_PATH_ARG="${ARGS[$next]}"; fi
+      ;;
+    --domain)
+      next=$((i+1))
+      if [ -n "${ARGS[$next]}" ]; then DOMAIN_ARG="${ARGS[$next]}"; fi
+      ;;
+    --db-pass)
+      next=$((i+1))
+      if [ -n "${ARGS[$next]}" ]; then DB_PASS_ARG="${ARGS[$next]}"; fi
       ;;
   esac
 done
@@ -300,7 +319,11 @@ echo ""
 echo -e "${BOLD}📋 Please provide the following information:${NC}"
 echo ""
 
-read -p "  Domain name (e.g. helpdesk.university.edu): " DOMAIN
+if [ -n "$DOMAIN_ARG" ]; then
+  DOMAIN="$DOMAIN_ARG"
+else
+  read -p "  Domain name (e.g. helpdesk.university.edu): " DOMAIN
+fi
 
 # ── SSL Mode selection ─────────────────────────────────────────
 if [ -z "$SSL_MODE" ]; then
@@ -329,18 +352,24 @@ if [ "$SSL_MODE" = "letsencrypt" ]; then
   read -p "  Admin email (for SSL certificate):          " EMAIL
 fi
 
-read -e -p "  Path to your LICENSE.key file:              " LICENSE_PATH
+if [ -n "$LICENSE_PATH_ARG" ]; then
+  LICENSE_PATH="$LICENSE_PATH_ARG"
+else
+  read -e -p "  Path to your LICENSE.key file:              " LICENSE_PATH
+fi
 
 echo ""
-read -s -p "  Choose a MySQL password for EduDesk:       " DB_PASS
-echo ""
-read -s -p "  Confirm MySQL password:                    " DB_PASS_CONFIRM
-echo ""
-
-# Validate passwords match
-if [ "$DB_PASS" != "$DB_PASS_CONFIRM" ]; then
-  echo -e "${RED}❌ Passwords do not match. Please run the script again.${NC}"
-  exit 1
+if [ -n "$DB_PASS_ARG" ]; then
+  DB_PASS="$DB_PASS_ARG"
+else
+  read -s -p "  Choose a MySQL password for EduDesk:       " DB_PASS
+  echo ""
+  read -s -p "  Confirm MySQL password:                    " DB_PASS_CONFIRM
+  echo ""
+  if [ "$DB_PASS" != "$DB_PASS_CONFIRM" ]; then
+    echo -e "${RED}❌ Passwords do not match. Please run the script again.${NC}"
+    exit 1
+  fi
 fi
 
 # Validate license file exists
@@ -492,75 +521,7 @@ echo ""
 echo -e "${CYAN}════════════════════════════════════════════${NC}"
 
 # ══════════════════════════════════════════════════════════════
-# STEP 4 — Deploy Key & Repo Access
-# ══════════════════════════════════════════════════════════════
-echo ""
-echo -e "${BOLD}🔑 Setting up repository access...${NC}"
-echo ""
-
-if [ -f "$DEPLOY_KEY_PATH" ]; then
-  echo -e "${YELLOW}ℹ️  A deploy key was already generated for this server.${NC}"
-  echo -e "   If already shared with CloudTitans, press ENTER to continue."
-  echo -e "   If not, share the key below first."
-  echo ""
-else
-  mkdir -p ~/.ssh
-  ssh-keygen -t ed25519 -C "edudesk-$(hostname)-$(date +%Y%m%d)" \
-             -f $DEPLOY_KEY_PATH -N "" -q
-  echo -e "${GREEN}✅ Deploy key generated${NC}"
-  echo ""
-fi
-
-echo -e "${BOLD}${CYAN}════════════════════════════════════════════${NC}"
-echo -e "${BOLD}${CYAN}  SHARE THIS KEY WITH CLOUDTITANS SUPPORT   ${NC}"
-echo -e "${BOLD}${CYAN}════════════════════════════════════════════${NC}"
-echo ""
-cat "$DEPLOY_KEY_PATH.pub"
-echo ""
-echo -e "${BOLD}${CYAN}════════════════════════════════════════════${NC}"
-echo ""
-echo -e "  📧  Email    : ${BOLD}support@ctitans.com${NC}"
-echo ""
-echo -e "  Once CloudTitans confirms access is granted,"
-echo -e "  press ENTER to continue..."
-echo ""
-read -p "  Press ENTER when access is confirmed: "
-
-mkdir -p ~/.ssh
-cat > ~/.ssh/config << EOF
-
-Host github-edudesk
-    HostName github.com
-    User git
-    IdentityFile $DEPLOY_KEY_PATH
-    IdentitiesOnly yes
-    StrictHostKeyChecking no
-EOF
-chmod 600 ~/.ssh/config
-
-echo ""
-echo -e "${BOLD}🔍 Testing repository access...${NC}"
-
-while true; do
-  SSH_TEST=$(ssh -T git@github-edudesk 2>&1 || true)
-  if echo "$SSH_TEST" | grep -q "saba7oo"; then
-    echo -e "${GREEN}✅ Repository access confirmed!${NC}"
-    break
-  else
-    echo ""
-    echo -e "${RED}❌ Access not granted yet.${NC}"
-    echo -e "   Make sure you shared the key and CloudTitans confirmed."
-    echo ""
-    read -p "  Press ENTER to try again, or Ctrl+C to cancel: "
-    echo -e "${BOLD}🔍 Retrying...${NC}"
-  fi
-done
-
-echo ""
-echo -e "${CYAN}════════════════════════════════════════════${NC}"
-
-# ══════════════════════════════════════════════════════════════
-# STEP 5 — Clone Repository
+# STEP 4 — Clone Repository
 # ══════════════════════════════════════════════════════════════
 echo ""
 echo -e "${BOLD}📥 Cloning EduDesk...${NC}"
@@ -572,7 +533,7 @@ fi
 
 if [ ! -d "$APP_DIR" ]; then
   mkdir -p /home/edudesk
-  git clone git@github-edudesk:saba7oo/edudesk-onprem.git $APP_DIR -q
+  git clone https://github.com/saba7oo/edudesk-onprem.git $APP_DIR -q
   echo -e "${GREEN}✅ Repository cloned${NC}"
 else
   echo -e "${YELLOW}ℹ️  Directory already exists, skipping clone${NC}"
