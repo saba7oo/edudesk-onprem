@@ -231,6 +231,12 @@
       "namedRegex": "^/api/tenant/branding(?:/)?$"
     },
     {
+      "page": "/api/tenant/branding/favicon",
+      "regex": "^/api/tenant/branding/favicon(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tenant/branding/favicon(?:/)?$"
+    },
+    {
       "page": "/api/tenant/branding/logo",
       "regex": "^/api/tenant/branding/logo(?:/)?$",
       "routeKeys": {},

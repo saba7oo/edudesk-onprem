@@ -20,6 +20,7 @@
   "/api/tenant/ad-sync/route": "/api/tenant/ad-sync",
   "/api/tenant/agents/[id]/categories/route": "/api/tenant/agents/[id]/categories",
   "/api/tenant/azure-sync/route": "/api/tenant/azure-sync",
+  "/api/tenant/branding/favicon/route": "/api/tenant/branding/favicon",
   "/api/tenant/branding/logo/route": "/api/tenant/branding/logo",
   "/api/tenant/branding/route": "/api/tenant/branding",
   "/api/tenant/categories/route": "/api/tenant/categories",
