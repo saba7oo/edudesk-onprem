@@ -149,6 +149,7 @@ echo -e "${GREEN}✅ Updated to v$NEW_VERSION${NC}"
 # ── STEP 5: Install packages ──────────────────────────────────
 echo ""
 echo -e "${BOLD}📦 Installing packages...${NC}"
+cd $APP_DIR
 npm install --legacy-peer-deps -q
 echo -e "${GREEN}✅ Packages ready${NC}"
 
