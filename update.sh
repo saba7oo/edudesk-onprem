@@ -106,15 +106,44 @@ echo -e "${GREEN}✅ Backup saved: $BACKUP_FILE${NC}"
 # Keep only last 10 backups
 ls -t $BACKUP_DIR/*.sql 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true
 
-# ── STEP 4: Pull update ───────────────────────────────────────
+# ── STEP 4: Download latest version ──────────────────────────
 echo ""
-echo -e "${BOLD}📥 Pulling latest version...${NC}"
+echo -e "${BOLD}📥 Downloading latest version...${NC}"
 
-cd $APP_DIR
-git fetch origin
-git reset --hard origin/main
+REPO="saba7oo/edudesk-onprem"
 
-NEW_VERSION=$(node -p "require('./package.json').version")
+# Get latest tag from GitHub API (no git, no SSH)
+LATEST_TAG=$(curl -fsSLk "https://api.github.com/repos/$REPO/tags" \
+  --max-time 15 \
+  | node -pe "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'))[0].name" 2>/dev/null)
+
+if [ -z "$LATEST_TAG" ]; then
+  echo -e "${RED}❌ Could not fetch latest version from GitHub.${NC}"
+  exit 1
+fi
+
+echo -e "   Downloading ${BOLD}$LATEST_TAG${NC}..."
+
+# Download tarball directly over HTTPS
+curl -fsSLk "https://github.com/$REPO/archive/refs/tags/$LATEST_TAG.tar.gz" \
+  -o /tmp/edudesk-update.tar.gz --max-time 120
+
+# Extract to temp dir
+rm -rf /tmp/edudesk-update/
+mkdir -p /tmp/edudesk-update
+tar -xzf /tmp/edudesk-update.tar.gz -C /tmp/edudesk-update --strip-components=1
+
+# Sync into app dir — preserve .env and LICENSE.key
+rsync -a \
+  --exclude='.env' \
+  --exclude='LICENSE.key' \
+  --exclude='node_modules/' \
+  /tmp/edudesk-update/ $APP_DIR/
+
+# Cleanup
+rm -rf /tmp/edudesk-update /tmp/edudesk-update.tar.gz
+
+NEW_VERSION=$(node -p "require('$APP_DIR/package.json').version")
 echo -e "${GREEN}✅ Updated to v$NEW_VERSION${NC}"
 
 # ── STEP 5: Install packages ──────────────────────────────────
