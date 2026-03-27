@@ -1,2 +1,2 @@
-ALTER TABLE `ad_configs` ADD COLUMN IF NOT EXISTS `googleOAuthClientId` VARCHAR(191) NULL;
-ALTER TABLE `ad_configs` ADD COLUMN IF NOT EXISTS `googleOAuthClientSecret` VARCHAR(191) NULL;
+ALTER TABLE `ad_configs` ADD COLUMN `googleOAuthClientId` VARCHAR(191) NULL;
+ALTER TABLE `ad_configs` ADD COLUMN `googleOAuthClientSecret` VARCHAR(191) NULL;
