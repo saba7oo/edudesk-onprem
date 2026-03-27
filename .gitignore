@@ -1,0 +1,6 @@
+node_modules/
+.env
+.env.*
+LICENSE.key
+*.log
+.next/cache/
