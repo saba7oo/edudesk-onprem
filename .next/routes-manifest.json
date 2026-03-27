@@ -129,6 +129,18 @@
       "namedRegex": "^/api/auth/azure/callback(?:/)?$"
     },
     {
+      "page": "/api/auth/detect",
+      "regex": "^/api/auth/detect(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/detect(?:/)?$"
+    },
+    {
+      "page": "/api/auth/google/callback",
+      "regex": "^/api/auth/google/callback(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/google/callback(?:/)?$"
+    },
+    {
       "page": "/api/departments",
       "regex": "^/api/departments(?:/)?$",
       "routeKeys": {},

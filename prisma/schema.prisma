@@ -167,6 +167,8 @@ model AdConfig {
   googleDomain              String?
   googleAdminEmail          String?
   googleServiceAccountJson  String?   @db.Text
+  googleOAuthClientId       String?
+  googleOAuthClientSecret   String?
   samlEntryPoint  String?
   samlIssuer      String?
   samlCert        String?     @db.Text

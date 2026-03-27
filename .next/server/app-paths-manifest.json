@@ -3,6 +3,8 @@
   "/_not-found/page": "app/_not-found/page.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/api/auth/azure/callback/route": "app/api/auth/azure/callback/route.js",
+  "/api/auth/detect/route": "app/api/auth/detect/route.js",
+  "/api/auth/google/callback/route": "app/api/auth/google/callback/route.js",
   "/api/departments/route": "app/api/departments/route.js",
   "/api/institution/ad-config/route": "app/api/institution/ad-config/route.js",
   "/api/institution/ad-sync/route": "app/api/institution/ad-sync/route.js",
