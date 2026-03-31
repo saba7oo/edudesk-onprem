@@ -153,10 +153,17 @@ echo -e "${GREEN}✅ Packages ready${NC}"
 echo ""
 echo -e "${BOLD}🗃️  Running database migrations...${NC}"
 npm install prisma@"^5.11.0" --no-save --legacy-peer-deps -q 2>/dev/null
-./node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma
-# Safety net: push any schema additions not covered by a migration file
-./node_modules/.bin/prisma db push --schema=prisma/schema.prisma --accept-data-loss 2>/dev/null || true
-echo -e "${GREEN}✅ Migrations applied${NC}"
+
+# Apply tracked migration files (best-effort — errors shown but won't abort)
+MIGRATE_OUT=$(./node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma 2>&1) && \
+  echo -e "${GREEN}✅ Migrations applied${NC}" || \
+  echo -e "${YELLOW}⚠️  migrate deploy had warnings (will sync via db push):${NC}
+$MIGRATE_OUT"
+
+# Safety net: sync any remaining schema differences not covered by migration files
+echo -e "${BOLD}   Syncing schema...${NC}"
+./node_modules/.bin/prisma db push --schema=prisma/schema.prisma --accept-data-loss
+echo -e "${GREEN}✅ Schema in sync${NC}"
 
 # ── STEP 7: Restart app ───────────────────────────────────────
 echo ""
