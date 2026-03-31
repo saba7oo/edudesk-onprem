@@ -261,6 +261,12 @@
       "namedRegex": "^/api/tenant/dept\\-admin\\-departments(?:/)?$"
     },
     {
+      "page": "/api/tenant/email-actions",
+      "regex": "^/api/tenant/email\\-actions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tenant/email\\-actions(?:/)?$"
+    },
+    {
       "page": "/api/tenant/email-templates",
       "regex": "^/api/tenant/email\\-templates(?:/)?$",
       "routeKeys": {},
@@ -331,6 +337,12 @@
       "regex": "^/api/users(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/users(?:/)?$"
+    },
+    {
+      "page": "/api/users/search",
+      "regex": "^/api/users/search(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/users/search(?:/)?$"
     },
     {
       "page": "/dashboard",

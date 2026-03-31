@@ -105,9 +105,11 @@ model Tenant {
   users         User[]
   tickets       Ticket[]
   kbArticles    KbArticle[]
-  usefulLinks   UsefulLink[]
-  deptConfigs   DepartmentConfig[]
-  categories    Category[]
+  usefulLinks     UsefulLink[]
+  deptConfigs     DepartmentConfig[]
+  categories      Category[]
+  emailTemplates  EmailTemplate[]
+  emailActions    EmailAction[]
   slaConfigs    SlaConfig[]
   notifications Notification[]
   auditLogs     AuditLog[]
@@ -265,6 +267,7 @@ model User {
   managerId     String?
   isActive      Boolean   @default(true)
   isSsoUser     Boolean   @default(false)
+  adSyncLocked  Boolean   @default(false)
   lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -279,11 +282,12 @@ model User {
   kbArticles          KbArticle[]
   notifications       Notification[]
   auditLogs           AuditLog[]
-  agentCategories     AgentCategory[]
-  agentDepartments    AgentDepartment[]
-  deptAdminOf         DeptAdminDepartment[]
-  manager             User?                 @relation("UserManager", fields: [managerId], references: [id])
-  reports             User[]                @relation("UserManager")
+  agentCategories      AgentCategory[]
+  agentDepartments     AgentDepartment[]
+  deptAdminOf          DeptAdminDepartment[]
+  manager              User?                 @relation("UserManager", fields: [managerId], references: [id])
+  reports              User[]                @relation("UserManager")
+  agentCreatedTickets  Ticket[]              @relation("AgentCreatedTickets")
 
   @@index([tenantId])
   @@index([email])
@@ -408,12 +412,14 @@ model Ticket {
   managerApprovalNote         String?  @db.Text
   managerNotifiedAt           DateTime?
   requestedManagerId          String?
+  createdByAgentId String?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  tenant      Tenant             @relation(fields: [tenantId], references: [id])
-  submitter   User               @relation("TicketSubmitter", fields: [submitterId], references: [id])
-  assignee    User?              @relation("TicketAgent", fields: [assigneeId], references: [id])
+  tenant         Tenant             @relation(fields: [tenantId], references: [id])
+  submitter      User               @relation("TicketSubmitter", fields: [submitterId], references: [id])
+  assignee       User?              @relation("TicketAgent", fields: [assigneeId], references: [id])
+  createdByAgent User?              @relation("AgentCreatedTickets", fields: [createdByAgentId], references: [id])
   requestedManager User?         @relation("TicketManager", fields: [requestedManagerId], references: [id])
   category    Category?          @relation(fields: [categoryId], references: [id])
   messages    TicketMessage[]
@@ -659,4 +665,51 @@ model UsefulLink {
 
   @@index([tenantId])
   @@map("useful_links")
+}
+
+// ─────────────────────────────────────────────────────────────
+// EMAIL TEMPLATES (per-tenant, custom + overriding defaults)
+// ─────────────────────────────────────────────────────────────
+
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  tenantId    String
+  key         String   // e.g. 'ticket_created', 'ticket_escalated', custom keys
+  name        String
+  subject     String   @db.Text
+  body        String   @db.LongText
+  variables   String?  @db.Text  // JSON array of variable tokens
+  isDefault   Boolean  @default(false)  // true = overrides a built-in default
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant  Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actions EmailAction[]
+
+  @@unique([tenantId, key])
+  @@index([tenantId])
+  @@map("email_templates")
+}
+
+// ─────────────────────────────────────────────────────────────
+// EMAIL ACTIONS (which template fires on which trigger + recipients)
+// ─────────────────────────────────────────────────────────────
+
+model EmailAction {
+  id             String   @id @default(cuid())
+  tenantId       String
+  trigger        String   // 'ticket_created', 'ticket_assigned', 'ticket_reply', etc.
+  templateId     String
+  recipientType  String   // 'SUBMITTER' | 'ASSIGNEE' | 'DEPT_ADMINS' | 'AZURE_GROUP' | 'DEPARTMENT_USERS' | 'CUSTOM_EMAIL'
+  recipientValue String?  // group DN, department key, or email address
+  isEnabled      Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  template EmailTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([trigger])
+  @@map("email_actions")
 }
