@@ -152,15 +152,15 @@ echo -e "${GREEN}✅ Packages ready${NC}"
 # ── STEP 6: Run migrations ────────────────────────────────────
 echo ""
 echo -e "${BOLD}🗃️  Running database migrations...${NC}"
-npm install prisma@"^5.11.0" --no-save --legacy-peer-deps -q 2>/dev/null
+npm install prisma@"^5.11.0" --no-save --legacy-peer-deps --no-fund -q 2>/dev/null
 
 PRISMA="./node_modules/.bin/prisma"
 SCHEMA="--schema=prisma/schema.prisma"
 
 # Helper: run a single SQL statement via prisma db execute (reads DATABASE_URL from .env)
-# Ignores "already exists" / "duplicate column" errors — safe to re-run
+# Ignores "already exists" / "duplicate" errors — safe to re-run on any install state
 run_sql() {
-  echo "$1" | $PRISMA db execute $SCHEMA --stdin 2>&1 | grep -v "already exists\|Duplicate column\|Can't create table" || true
+  echo "$1" | $PRISMA db execute $SCHEMA --stdin 2>&1 | grep -vi "already exists\|Duplicate column\|Duplicate key\|Duplicate foreign key\|Can't create table\|Script executed" || true
 }
 
 run_sql "ALTER TABLE \`users\` ADD COLUMN \`adSyncLocked\` BOOLEAN NOT NULL DEFAULT false"
