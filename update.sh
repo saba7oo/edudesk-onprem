@@ -146,7 +146,7 @@ echo -e "${GREEN}✅ Updated to v$NEW_VERSION${NC}"
 echo ""
 echo -e "${BOLD}📦 Installing packages...${NC}"
 cd $APP_DIR
-npm install --legacy-peer-deps -q
+npm install --legacy-peer-deps --no-fund --no-audit -q
 echo -e "${GREEN}✅ Packages ready${NC}"
 
 # ── STEP 6: Run migrations ────────────────────────────────────
