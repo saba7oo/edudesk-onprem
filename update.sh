@@ -177,10 +177,32 @@ run_sql "ALTER TABLE \`email_actions\` ADD CONSTRAINT \`email_actions_templateId
 
 echo -e "${GREEN}✅ Schema columns applied${NC}"
 
+# Resolve any migrations stuck in failed state (schema already synced above)
+MIGRATE_STATUS=$($PRISMA migrate status $SCHEMA 2>&1)
+echo "$MIGRATE_STATUS" | grep -oE '[0-9]{14}_[a-zA-Z0-9_]+' | while read migration; do
+  if echo "$MIGRATE_STATUS" | grep -A2 "$migration" | grep -q "failed"; then
+    echo -e "${YELLOW}   Resolving failed migration: $migration${NC}"
+    $PRISMA migrate resolve --applied "$migration" $SCHEMA 2>/dev/null || true
+  fi
+done
+
 # Apply any remaining tracked migrations
-MIGRATE_OUT=$($PRISMA migrate deploy $SCHEMA 2>&1) && \
-  echo -e "${GREEN}✅ Migrations applied${NC}" || \
+MIGRATE_OUT=$($PRISMA migrate deploy $SCHEMA 2>&1)
+MIGRATE_EXIT=$?
+if [ $MIGRATE_EXIT -eq 0 ]; then
+  echo -e "${GREEN}✅ Migrations applied${NC}"
+elif echo "$MIGRATE_OUT" | grep -q "P3009"; then
+  # Still has failed migrations — extract and resolve them, then retry
+  echo "$MIGRATE_OUT" | grep -oE '`[0-9]{14}_[^`]+`' | tr -d '`' | while read migration; do
+    echo -e "${YELLOW}   Resolving failed migration: $migration${NC}"
+    $PRISMA migrate resolve --applied "$migration" $SCHEMA 2>/dev/null || true
+  done
+  $PRISMA migrate deploy $SCHEMA 2>&1 && \
+    echo -e "${GREEN}✅ Migrations applied${NC}" || \
+    echo -e "${YELLOW}⚠️  Some migrations could not be applied (schema was synced directly)${NC}"
+else
   echo -e "${YELLOW}⚠️  migrate deploy: $MIGRATE_OUT${NC}"
+fi
 
 # ── STEP 7: Restart app ───────────────────────────────────────
 echo ""
