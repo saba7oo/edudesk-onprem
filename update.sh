@@ -95,16 +95,30 @@ echo -e "${BOLD}💾 Backing up database...${NC}"
 
 mkdir -p $BACKUP_DIR
 
-# Extract DB password from .env
-DB_PASS=$(grep '^DATABASE_URL=' $APP_DIR/.env | sed 's/.*:\/\/[^:]*:\([^@]*\)@.*/\1/')
+# Parse DATABASE_URL with Node.js to correctly handle URL-encoded passwords and special chars
+DB_CREDENTIALS=$(node -e "
+  try {
+    const line = require('fs').readFileSync('$APP_DIR/.env', 'utf8')
+      .split('\n').find(l => l.startsWith('DATABASE_URL=')) || '';
+    const url = line.replace(/^DATABASE_URL=[\"']?/, '').replace(/[\"']?\s*$/, '');
+    const u = new URL(url);
+    console.log(decodeURIComponent(u.username) + '|' + decodeURIComponent(u.password) + '|' + u.hostname + '|' + u.pathname.slice(1));
+  } catch(e) { console.log('||localhost|edudesk'); }
+" 2>/dev/null)
+DB_USER=$(echo "$DB_CREDENTIALS" | cut -d'|' -f1)
+DB_PASS=$(echo "$DB_CREDENTIALS" | cut -d'|' -f2)
+DB_HOST=$(echo "$DB_CREDENTIALS" | cut -d'|' -f3)
+DB_NAME=$(echo "$DB_CREDENTIALS" | cut -d'|' -f4)
 
 BACKUP_FILE="$BACKUP_DIR/edudesk-$(date +%Y%m%d-%H%M%S).sql"
-mysqldump -u edudesk -p"$DB_PASS" edudesk > "$BACKUP_FILE"
-
-echo -e "${GREEN}✅ Backup saved: $BACKUP_FILE${NC}"
-
-# Keep only last 10 backups
-ls -t $BACKUP_DIR/*.sql 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true
+if mysqldump -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$BACKUP_FILE" 2>/dev/null; then
+  echo -e "${GREEN}✅ Backup saved: $BACKUP_FILE${NC}"
+  # Keep only last 10 backups
+  ls -t $BACKUP_DIR/*.sql 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true
+else
+  echo -e "${YELLOW}⚠️  Backup skipped (mysqldump error — update will continue)${NC}"
+  rm -f "$BACKUP_FILE"
+fi
 
 # ── STEP 4: Download latest version ──────────────────────────
 echo ""

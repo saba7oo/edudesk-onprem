@@ -1,6 +1,6 @@
 {
   "name": "edudesk-onprem",
-  "version": "3.0.41",
+  "version": "3.0.42",
   "description": "EduDesk OnPrem — Self-Hosted Helpdesk by CloudTitans",
   "private": true,
   "scripts": {
