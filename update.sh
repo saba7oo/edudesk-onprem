@@ -95,14 +95,16 @@ echo -e "${BOLD}💾 Backing up database...${NC}"
 
 mkdir -p $BACKUP_DIR
 
-# Parse DATABASE_URL with Node.js to correctly handle URL-encoded passwords and special chars
+# Parse DATABASE_URL with Node.js — use regex so passwords with @ or special chars work
 DB_CREDENTIALS=$(node -e "
   try {
     const line = require('fs').readFileSync('$APP_DIR/.env', 'utf8')
       .split('\n').find(l => l.startsWith('DATABASE_URL=')) || '';
     const url = line.replace(/^DATABASE_URL=[\"']?/, '').replace(/[\"']?\s*$/, '');
-    const u = new URL(url);
-    console.log(decodeURIComponent(u.username) + '|' + decodeURIComponent(u.password) + '|' + u.hostname + '|' + u.pathname.slice(1));
+    // Regex: greedily capture password (allows @ inside), split on LAST @ before host
+    const m = url.match(/^[^:]+:\/\/([^:]+):(.+)@([^:@\/]+)(?::\d+)?\/([^?]+)/);
+    if (!m) throw new Error('no match');
+    console.log(decodeURIComponent(m[1]) + '|' + decodeURIComponent(m[2]) + '|' + m[3] + '|' + m[4]);
   } catch(e) { console.log('||localhost|edudesk'); }
 " 2>/dev/null)
 DB_USER=$(echo "$DB_CREDENTIALS" | cut -d'|' -f1)
