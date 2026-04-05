@@ -107,7 +107,8 @@ model Tenant {
   kbArticles    KbArticle[]
   usefulLinks     UsefulLink[]
   deptConfigs     DepartmentConfig[]
-  categories      Category[]
+  categories       Category[]
+  classifications  Classification[]
   emailTemplates  EmailTemplate[]
   emailActions    EmailAction[]
   slaConfigs    SlaConfig[]
@@ -395,6 +396,7 @@ model Ticket {
   status           TicketStatus @default(OPEN)
   priority         Priority     @default(MEDIUM)
   department       String
+  classificationId String?                         // ticket classification (set by student/staff)
   categoryId       String?                         // optional category
   categoryPath     String?                         // "IT Support > Hardware > Printer"
   categoryDetail   String?                         // value from DROPDOWN or TEXT_FIELD category type
@@ -421,6 +423,7 @@ model Ticket {
   assignee       User?              @relation("TicketAgent", fields: [assigneeId], references: [id])
   createdByAgent User?              @relation("AgentCreatedTickets", fields: [createdByAgentId], references: [id])
   requestedManager User?         @relation("TicketManager", fields: [requestedManagerId], references: [id])
+  classification Classification? @relation(fields: [classificationId], references: [id], onDelete: SetNull)
   category    Category?          @relation(fields: [categoryId], references: [id])
   messages    TicketMessage[]
   activities  TicketActivity[]
@@ -430,6 +433,7 @@ model Ticket {
   @@index([tenantId])
   @@index([status])
   @@index([department])
+  @@index([classificationId])
   @@index([categoryId])
   @@index([submitterId])
   @@index([requestedManagerId])
@@ -712,4 +716,24 @@ model EmailAction {
   @@index([tenantId])
   @@index([trigger])
   @@map("email_actions")
+}
+
+// ─────────────────────────────────────────────────────────────
+// TICKET CLASSIFICATIONS (admin-managed list shown to students/staff)
+// ─────────────────────────────────────────────────────────────
+
+model Classification {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tickets Ticket[]
+
+  @@index([tenantId])
+  @@map("classifications")
 }
