@@ -38,6 +38,14 @@
       "namedRegex": "^/api/tenant/agents/(?<nxtPid>[^/]+?)/categories(?:/)?$"
     },
     {
+      "page": "/api/tenant/kb/attachments/[uid]/download",
+      "regex": "^/api/tenant/kb/attachments/([^/]+?)/download(?:/)?$",
+      "routeKeys": {
+        "nxtPuid": "nxtPuid"
+      },
+      "namedRegex": "^/api/tenant/kb/attachments/(?<nxtPuid>[^/]+?)/download(?:/)?$"
+    },
+    {
       "page": "/api/tenant/users/[id]",
       "regex": "^/api/tenant/users/([^/]+?)(?:/)?$",
       "routeKeys": {
@@ -289,6 +297,12 @@
       "regex": "^/api/tenant/kb(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/tenant/kb(?:/)?$"
+    },
+    {
+      "page": "/api/tenant/kb/attachments",
+      "regex": "^/api/tenant/kb/attachments(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tenant/kb/attachments(?:/)?$"
     },
     {
       "page": "/api/tenant/license",

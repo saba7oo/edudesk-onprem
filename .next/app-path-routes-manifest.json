@@ -30,6 +30,8 @@
   "/api/tenant/email-actions/route": "/api/tenant/email-actions",
   "/api/tenant/email-templates/route": "/api/tenant/email-templates",
   "/api/tenant/google-sync/route": "/api/tenant/google-sync",
+  "/api/tenant/kb/attachments/[uid]/download/route": "/api/tenant/kb/attachments/[uid]/download",
+  "/api/tenant/kb/attachments/route": "/api/tenant/kb/attachments",
   "/api/tenant/kb/route": "/api/tenant/kb",
   "/api/tenant/license/route": "/api/tenant/license",
   "/api/tenant/performance/route": "/api/tenant/performance",

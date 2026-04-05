@@ -30,6 +30,8 @@
   "/api/tenant/email-actions/route": "app/api/tenant/email-actions/route.js",
   "/api/tenant/email-templates/route": "app/api/tenant/email-templates/route.js",
   "/api/tenant/google-sync/route": "app/api/tenant/google-sync/route.js",
+  "/api/tenant/kb/attachments/[uid]/download/route": "app/api/tenant/kb/attachments/[uid]/download/route.js",
+  "/api/tenant/kb/attachments/route": "app/api/tenant/kb/attachments/route.js",
   "/api/tenant/kb/route": "app/api/tenant/kb/route.js",
   "/api/tenant/license/route": "app/api/tenant/license/route.js",
   "/api/tenant/performance/route": "app/api/tenant/performance/route.js",

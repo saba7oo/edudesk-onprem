@@ -371,6 +371,24 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/api/tenant/kb/attachments/[uid]/download/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/tenant/kb/attachments/[uid]/download">> = Specific
+  const handler = {} as typeof import("../../src/app/api/tenant/kb/attachments/[uid]/download/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/tenant/kb/attachments/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/tenant/kb/attachments">> = Specific
+  const handler = {} as typeof import("../../src/app/api/tenant/kb/attachments/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/api/tenant/kb/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/tenant/kb">> = Specific

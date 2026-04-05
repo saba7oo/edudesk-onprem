@@ -1,0 +1,3 @@
+{
+  "/api/tenant/kb/attachments/[uid]/download/route": "app/api/tenant/kb/attachments/[uid]/download/route.js"
+}
