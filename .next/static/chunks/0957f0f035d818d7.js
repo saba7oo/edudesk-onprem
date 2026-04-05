@@ -1,1 +1,0 @@
-(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,18566,(t,o,e)=>{o.exports=t.r(76562)},64227,t=>{"use strict";t.i(43476);let o=Error("Cannot find module '@tiptap/react'");throw o.code="MODULE_NOT_FOUND",o}]);
