@@ -13,6 +13,7 @@
   "/api/notifications/route": "/api/notifications",
   "/api/portal/branding/route": "/api/portal/branding",
   "/api/portal/storage-config/route": "/api/portal/storage-config",
+  "/api/public/branding/route": "/api/public/branding",
   "/api/reports/route": "/api/reports",
   "/api/system/update/route": "/api/system/update",
   "/api/system/update/status/route": "/api/system/update/status",
