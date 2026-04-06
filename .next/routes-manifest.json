@@ -179,6 +179,12 @@
       "namedRegex": "^/api/kb(?:/)?$"
     },
     {
+      "page": "/api/notifications",
+      "regex": "^/api/notifications(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/notifications(?:/)?$"
+    },
+    {
       "page": "/api/portal/branding",
       "regex": "^/api/portal/branding(?:/)?$",
       "routeKeys": {},
@@ -321,6 +327,12 @@
       "regex": "^/api/tenant/priority\\-config(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/tenant/priority\\-config(?:/)?$"
+    },
+    {
+      "page": "/api/tenant/sla",
+      "regex": "^/api/tenant/sla(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tenant/sla(?:/)?$"
     },
     {
       "page": "/api/tenant/smtp",
