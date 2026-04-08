@@ -44,6 +44,7 @@
   "/api/tenant/useful-links/route": "app/api/tenant/useful-links/route.js",
   "/api/tenant/users/[id]/route": "app/api/tenant/users/[id]/route.js",
   "/api/tenant/users/route": "app/api/tenant/users/route.js",
+  "/api/tenant/working-hours/route": "app/api/tenant/working-hours/route.js",
   "/api/tickets/[id]/attachments/[uid]/download/route": "app/api/tickets/[id]/attachments/[uid]/download/route.js",
   "/api/tickets/[id]/attachments/route": "app/api/tickets/[id]/attachments/route.js",
   "/api/tickets/[id]/eligible-agents/route": "app/api/tickets/[id]/eligible-agents/route.js",

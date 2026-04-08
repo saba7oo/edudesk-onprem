@@ -365,6 +365,12 @@
       "namedRegex": "^/api/tenant/users(?:/)?$"
     },
     {
+      "page": "/api/tenant/working-hours",
+      "regex": "^/api/tenant/working\\-hours(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tenant/working\\-hours(?:/)?$"
+    },
+    {
       "page": "/api/tickets",
       "regex": "^/api/tickets(?:/)?$",
       "routeKeys": {},

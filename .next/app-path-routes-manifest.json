@@ -44,6 +44,7 @@
   "/api/tenant/useful-links/route": "/api/tenant/useful-links",
   "/api/tenant/users/[id]/route": "/api/tenant/users/[id]",
   "/api/tenant/users/route": "/api/tenant/users",
+  "/api/tenant/working-hours/route": "/api/tenant/working-hours",
   "/api/tickets/[id]/attachments/[uid]/download/route": "/api/tickets/[id]/attachments/[uid]/download",
   "/api/tickets/[id]/attachments/route": "/api/tickets/[id]/attachments",
   "/api/tickets/[id]/eligible-agents/route": "/api/tickets/[id]/eligible-agents",

@@ -112,6 +112,7 @@ model Tenant {
   emailTemplates  EmailTemplate[]
   emailActions    EmailAction[]
   slaConfigs    SlaConfig[]
+  workingHours  WorkingHours?
   notifications Notification[]
   auditLogs     AuditLog[]
   smtpConfig    SmtpConfig?
@@ -570,8 +571,8 @@ model SlaConfig {
   id            String   @id @default(cuid())
   tenantId      String
   priority      Priority
-  responseHours Int
-  resolveHours  Int
+  responseHours Float
+  resolveHours  Float
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -737,4 +738,24 @@ model Classification {
 
   @@index([tenantId])
   @@map("classifications")
+}
+
+// ─────────────────────────────────────────────────────────────
+// WORKING HOURS (per-tenant SLA business hours config)
+// ─────────────────────────────────────────────────────────────
+
+model WorkingHours {
+  id        String   @id @default(cuid())
+  tenantId  String   @unique
+  enabled   Boolean  @default(false)
+  workDays  String   @default("[1,2,3,4,5]")   // JSON array 0=Sun..6=Sat
+  startHour Float    @default(9)
+  endHour   Float    @default(17)
+  timezone  String   @default("UTC")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("working_hours")
 }
