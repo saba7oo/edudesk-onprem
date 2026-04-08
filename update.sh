@@ -239,13 +239,27 @@ fi
 # ── STEP 7: Restart app ───────────────────────────────────────
 echo ""
 echo -e "${BOLD}🔄 Restarting EduDesk...${NC}"
-systemctl restart edudesk
+
+# Stop first, wait until fully stopped, then start fresh
+systemctl stop edudesk 2>/dev/null || true
 sleep 3
+
+systemctl start edudesk
+sleep 5
+
 if systemctl is-active --quiet edudesk; then
-  echo -e "${GREEN}✅ EduDesk restarted successfully${NC}"
+  echo -e "${GREEN}✅ EduDesk started successfully${NC}"
 else
-  echo -e "${RED}❌ EduDesk failed to start — check logs: journalctl -u edudesk -n 50${NC}"
-  exit 1
+  # One more try
+  echo -e "${YELLOW}⚠️  First start attempt failed, retrying...${NC}"
+  systemctl restart edudesk
+  sleep 5
+  if systemctl is-active --quiet edudesk; then
+    echo -e "${GREEN}✅ EduDesk restarted successfully${NC}"
+  else
+    echo -e "${RED}❌ EduDesk failed to start — check logs: journalctl -u edudesk -n 50${NC}"
+    exit 1
+  fi
 fi
 
 echo ""
