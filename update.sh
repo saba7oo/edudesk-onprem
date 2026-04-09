@@ -128,10 +128,10 @@ echo -e "${BOLD}📥 Downloading latest version...${NC}"
 
 REPO="saba7oo/edudesk-onprem"
 
-# Get latest tag from GitHub API (no git, no SSH)
-LATEST_TAG=$(curl -fsSLk "https://api.github.com/repos/$REPO/tags" \
+# Get latest version from raw package.json — no rate limit, no token needed
+LATEST_TAG=$(curl -fsSLk "https://raw.githubusercontent.com/$REPO/main/package.json" \
   --max-time 15 \
-  | node -pe "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'))[0].name" 2>/dev/null)
+  | node -pe "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); 'v'+d.version" 2>/dev/null)
 
 if [ -z "$LATEST_TAG" ]; then
   echo -e "${RED}❌ Could not fetch latest version from GitHub.${NC}"
