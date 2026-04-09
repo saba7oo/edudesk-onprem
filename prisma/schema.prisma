@@ -164,7 +164,10 @@ model AdConfig {
   ldapBindPass    String?
   ldapUserFilter  String?     @default("(&(objectClass=user)(mail={{email}}))")
   ldapGroupFilter String?
-  groupRoleMap    String?     @db.Text
+  groupRoleMap         String?     @db.Text
+  ldapManagerGroups    String?     @db.Text   // JSON [{department,group}]
+  azureManagerGroups   String?     @db.Text   // JSON [{department,group}]
+  googleManagerGroups  String?     @db.Text   // JSON [{department,group}]
   azureTenantId   String?
   azureClientId   String?
   azureClientSecret String?
