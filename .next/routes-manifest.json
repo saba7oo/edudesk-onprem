@@ -191,6 +191,12 @@
       "namedRegex": "^/api/portal/branding(?:/)?$"
     },
     {
+      "page": "/api/portal/managers",
+      "regex": "^/api/portal/managers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/portal/managers(?:/)?$"
+    },
+    {
       "page": "/api/portal/storage-config",
       "regex": "^/api/portal/storage\\-config(?:/)?$",
       "routeKeys": {},

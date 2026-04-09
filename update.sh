@@ -213,6 +213,8 @@ run_sql "ALTER TABLE \`working_hours\` ADD CONSTRAINT \`working_hours_tenantId_f
 run_sql "ALTER TABLE \`ad_configs\` ADD COLUMN \`ldapManagerGroups\` TEXT NULL"
 run_sql "ALTER TABLE \`ad_configs\` ADD COLUMN \`azureManagerGroups\` TEXT NULL"
 run_sql "ALTER TABLE \`ad_configs\` ADD COLUMN \`googleManagerGroups\` TEXT NULL"
+run_sql "ALTER TABLE \`tickets\` ADD COLUMN \`staffManagerId\` VARCHAR(191) NULL"
+run_sql "ALTER TABLE \`tickets\` ADD CONSTRAINT \`tickets_staffManagerId_fkey\` FOREIGN KEY (\`staffManagerId\`) REFERENCES \`users\`(\`id\`) ON DELETE SET NULL ON UPDATE CASCADE"
 
 echo -e "${GREEN}✅ Schema columns applied${NC}"
 

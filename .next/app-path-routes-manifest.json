@@ -12,6 +12,7 @@
   "/api/kb/route": "/api/kb",
   "/api/notifications/route": "/api/notifications",
   "/api/portal/branding/route": "/api/portal/branding",
+  "/api/portal/managers/route": "/api/portal/managers",
   "/api/portal/storage-config/route": "/api/portal/storage-config",
   "/api/public/branding/route": "/api/public/branding",
   "/api/reports/route": "/api/reports",

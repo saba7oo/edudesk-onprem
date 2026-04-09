@@ -12,6 +12,7 @@
   "/api/kb/route": "app/api/kb/route.js",
   "/api/notifications/route": "app/api/notifications/route.js",
   "/api/portal/branding/route": "app/api/portal/branding/route.js",
+  "/api/portal/managers/route": "app/api/portal/managers/route.js",
   "/api/portal/storage-config/route": "app/api/portal/storage-config/route.js",
   "/api/public/branding/route": "app/api/public/branding/route.js",
   "/api/reports/route": "app/api/reports/route.js",

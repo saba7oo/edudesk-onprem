@@ -281,6 +281,7 @@ model User {
   submittedTickets    Ticket[]              @relation("TicketSubmitter")
   assignedTickets     Ticket[]              @relation("TicketAgent")
   requestedApprovalTickets Ticket[]         @relation("TicketManager")
+  staffManagedTickets      Ticket[]         @relation("TicketStaffManager")
   activities          TicketActivity[]
   messages            TicketMessage[]
   attachments         TicketAttachment[]
@@ -418,6 +419,7 @@ model Ticket {
   managerApprovalNote         String?  @db.Text
   managerNotifiedAt           DateTime?
   requestedManagerId          String?
+  staffManagerId              String?   // manager selected by submitter in portal
   createdByAgentId String?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
@@ -427,6 +429,7 @@ model Ticket {
   assignee       User?              @relation("TicketAgent", fields: [assigneeId], references: [id])
   createdByAgent User?              @relation("AgentCreatedTickets", fields: [createdByAgentId], references: [id])
   requestedManager User?         @relation("TicketManager", fields: [requestedManagerId], references: [id])
+  staffManager     User?         @relation("TicketStaffManager", fields: [staffManagerId], references: [id])
   classification Classification? @relation(fields: [classificationId], references: [id], onDelete: SetNull)
   category    Category?          @relation(fields: [categoryId], references: [id])
   messages    TicketMessage[]
@@ -441,6 +444,7 @@ model Ticket {
   @@index([categoryId])
   @@index([submitterId])
   @@index([requestedManagerId])
+  @@index([staffManagerId])
   @@map("tickets")
 }
 
