@@ -755,7 +755,7 @@ model WorkingHours {
   id        String   @id @default(cuid())
   tenantId  String   @unique
   enabled   Boolean  @default(false)
-  workDays  String   @default("[1,2,3,4,5]")   // JSON array 0=Sun..6=Sat
+  workDays  String   @db.Text                   // JSON array 0=Sun..6=Sat — no DB default (TEXT columns)
   startHour Float    @default(9)
   endHour   Float    @default(17)
   timezone  String   @default("UTC")
