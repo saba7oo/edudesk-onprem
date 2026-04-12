@@ -38,6 +38,7 @@
   "/api/tenant/kb/attachments/route": "/api/tenant/kb/attachments",
   "/api/tenant/kb/route": "/api/tenant/kb",
   "/api/tenant/license/route": "/api/tenant/license",
+  "/api/tenant/ola/route": "/api/tenant/ola",
   "/api/tenant/performance/route": "/api/tenant/performance",
   "/api/tenant/priority-config/route": "/api/tenant/priority-config",
   "/api/tenant/sla/route": "/api/tenant/sla",

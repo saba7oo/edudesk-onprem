@@ -112,6 +112,7 @@ model Tenant {
   emailTemplates  EmailTemplate[]
   emailActions    EmailAction[]
   slaConfigs    SlaConfig[]
+  olaConfigs    OlaConfig[]
   workingHours  WorkingHours?
   notifications Notification[]
   auditLogs     AuditLog[]
@@ -436,6 +437,7 @@ model Ticket {
   activities  TicketActivity[]
   attachments TicketAttachment[]
   slaLog      SlaLog?
+  olaLog      OlaLog?
 
   @@index([tenantId])
   @@index([status])
@@ -505,6 +507,44 @@ model TicketActivity {
 
   @@index([ticketId])
   @@map("ticket_activities")
+}
+
+model OlaConfig {
+  id             String   @id @default(cuid())
+  tenantId       String
+  fromDepartment String
+  toDepartment   String
+  priority       Priority
+  responseHours  Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, fromDepartment, toDepartment, priority])
+  @@index([tenantId])
+  @@map("ola_configs")
+}
+
+model OlaLog {
+  id             String    @id @default(cuid())
+  ticketId       String    @unique
+  tenantId       String
+  fromDepartment String
+  toDepartment   String
+  priority       Priority
+  responseHours  Float
+  startedAt      DateTime  @default(now())
+  respondedAt    DateTime?
+  breached       Boolean   @default(false)
+  notifiedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("ola_logs")
 }
 
 model SlaLog {

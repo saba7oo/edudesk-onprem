@@ -335,6 +335,12 @@
       "namedRegex": "^/api/tenant/license(?:/)?$"
     },
     {
+      "page": "/api/tenant/ola",
+      "regex": "^/api/tenant/ola(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tenant/ola(?:/)?$"
+    },
+    {
       "page": "/api/tenant/performance",
       "regex": "^/api/tenant/performance(?:/)?$",
       "routeKeys": {},
