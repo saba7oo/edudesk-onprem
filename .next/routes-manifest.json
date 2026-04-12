@@ -341,6 +341,12 @@
       "namedRegex": "^/api/tenant/ola(?:/)?$"
     },
     {
+      "page": "/api/tenant/ola/departments",
+      "regex": "^/api/tenant/ola/departments(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tenant/ola/departments(?:/)?$"
+    },
+    {
       "page": "/api/tenant/performance",
       "regex": "^/api/tenant/performance(?:/)?$",
       "routeKeys": {},

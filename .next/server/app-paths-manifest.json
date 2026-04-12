@@ -38,6 +38,7 @@
   "/api/tenant/kb/attachments/route": "app/api/tenant/kb/attachments/route.js",
   "/api/tenant/kb/route": "app/api/tenant/kb/route.js",
   "/api/tenant/license/route": "app/api/tenant/license/route.js",
+  "/api/tenant/ola/departments/route": "app/api/tenant/ola/departments/route.js",
   "/api/tenant/ola/route": "app/api/tenant/ola/route.js",
   "/api/tenant/performance/route": "app/api/tenant/performance/route.js",
   "/api/tenant/priority-config/route": "app/api/tenant/priority-config/route.js",
