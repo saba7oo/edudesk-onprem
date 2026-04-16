@@ -141,7 +141,11 @@ model TenantBranding {
   welcomeMessage  String? @db.Text
   footerText      String?
   supportEmail    String?
-  customCss       String? @db.LongText
+  customCss            String? @db.LongText
+  loginHeadline        String? @db.Text
+  loginSubtitle        String? @db.Text
+  loginBannerImageUrl  String? @db.VarChar(767)
+  loginButtons         String? @db.Text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
