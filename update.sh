@@ -163,6 +163,9 @@ echo ""
 echo -e "${BOLD}📦 Installing packages...${NC}"
 cd $APP_DIR
 npm install --legacy-peer-deps --no-fund --no-audit -q
+
+# Regenerate Prisma client from updated schema
+npx prisma generate --schema=prisma/schema.prisma 2>&1 | grep -E "Generated|error" || true
 echo -e "${GREEN}✅ Packages ready${NC}"
 
 # ── STEP 6: Run migrations ────────────────────────────────────
