@@ -155,6 +155,12 @@
       "namedRegex": "^/api/departments(?:/)?$"
     },
     {
+      "page": "/api/events",
+      "regex": "^/api/events(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/events(?:/)?$"
+    },
+    {
       "page": "/api/institution/ad-config",
       "regex": "^/api/institution/ad\\-config(?:/)?$",
       "routeKeys": {},

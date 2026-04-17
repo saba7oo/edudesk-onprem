@@ -6,6 +6,7 @@
   "/api/auth/detect/route": "/api/auth/detect",
   "/api/auth/google/callback/route": "/api/auth/google/callback",
   "/api/departments/route": "/api/departments",
+  "/api/events/route": "/api/events",
   "/api/institution/ad-config/route": "/api/institution/ad-config",
   "/api/institution/ad-sync/route": "/api/institution/ad-sync",
   "/api/institution/smtp/route": "/api/institution/smtp",

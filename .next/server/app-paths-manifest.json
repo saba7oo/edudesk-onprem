@@ -6,6 +6,7 @@
   "/api/auth/detect/route": "app/api/auth/detect/route.js",
   "/api/auth/google/callback/route": "app/api/auth/google/callback/route.js",
   "/api/departments/route": "app/api/departments/route.js",
+  "/api/events/route": "app/api/events/route.js",
   "/api/institution/ad-config/route": "app/api/institution/ad-config/route.js",
   "/api/institution/ad-sync/route": "app/api/institution/ad-sync/route.js",
   "/api/institution/smtp/route": "app/api/institution/smtp/route.js",
