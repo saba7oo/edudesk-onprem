@@ -221,6 +221,18 @@
       "namedRegex": "^/api/reports(?:/)?$"
     },
     {
+      "page": "/api/system/restart",
+      "regex": "^/api/system/restart(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/system/restart(?:/)?$"
+    },
+    {
+      "page": "/api/system/restart/status",
+      "regex": "^/api/system/restart/status(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/system/restart/status(?:/)?$"
+    },
+    {
       "page": "/api/system/update",
       "regex": "^/api/system/update(?:/)?$",
       "routeKeys": {},

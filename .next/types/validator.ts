@@ -254,6 +254,24 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/api/system/restart/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/system/restart">> = Specific
+  const handler = {} as typeof import("../../src/app/api/system/restart/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/system/restart/status/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/system/restart/status">> = Specific
+  const handler = {} as typeof import("../../src/app/api/system/restart/status/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/api/system/update/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/system/update">> = Specific
