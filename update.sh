@@ -262,6 +262,23 @@ fi
 echo ""
 echo -e "${BOLD}🔄 Restarting EduDesk...${NC}"
 
+# Harden the service so stop/restart never hangs ~90s: npm doesn't forward signals
+# to next-server, so SIGTERM the whole cgroup and cap the stop wait at 20s.
+# Applied as a drop-in (idempotent) so we don't clobber the base unit.
+DROPIN_DIR="/etc/systemd/system/edudesk.service.d"
+DROPIN="$DROPIN_DIR/10-restart.conf"
+if [ ! -f "$DROPIN" ] || ! grep -q "TimeoutStopSec=20" "$DROPIN" 2>/dev/null; then
+  mkdir -p "$DROPIN_DIR"
+  cat > "$DROPIN" << 'DROPINEOF'
+[Service]
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutStopSec=20
+DROPINEOF
+  systemctl daemon-reload
+  echo -e "${GREEN}✅ Service restart config hardened${NC}"
+fi
+
 # Stop first, wait until fully stopped, then start fresh
 systemctl stop edudesk 2>/dev/null || true
 sleep 3

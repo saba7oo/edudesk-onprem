@@ -924,6 +924,11 @@ ExecStart=/usr/bin/npm run start
 Restart=on-failure
 RestartSec=10
 EnvironmentFile=-$APP_DIR/.env
+# Reliable stop/restart: SIGTERM to the whole cgroup (npm doesn't forward signals
+# to next-server), and cap the stop wait at 20s so restarts never hang ~90s.
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutStopSec=20
 
 [Install]
 WantedBy=multi-user.target
