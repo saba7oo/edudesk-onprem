@@ -224,6 +224,11 @@ run_sql "ALTER TABLE \`ola_configs\` ADD CONSTRAINT \`ola_configs_tenantId_fkey\
 run_sql "CREATE TABLE IF NOT EXISTS \`ola_logs\` (\`id\` VARCHAR(191) NOT NULL, \`ticketId\` VARCHAR(191) NOT NULL, \`tenantId\` VARCHAR(191) NOT NULL, \`fromDepartment\` VARCHAR(191) NOT NULL, \`toDepartment\` VARCHAR(191) NOT NULL, \`priority\` ENUM('LOW','MEDIUM','HIGH','CRITICAL') NOT NULL, \`responseHours\` FLOAT NOT NULL, \`startedAt\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), \`respondedAt\` DATETIME(3) NULL, \`breached\` BOOLEAN NOT NULL DEFAULT false, \`notifiedAt\` DATETIME(3) NULL, \`createdAt\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), UNIQUE INDEX \`ola_logs_ticketId_key\`(\`ticketId\`), INDEX \`ola_logs_tenantId_idx\`(\`tenantId\`), PRIMARY KEY (\`id\`)) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 run_sql "ALTER TABLE \`ola_logs\` ADD CONSTRAINT \`ola_logs_ticketId_fkey\` FOREIGN KEY (\`ticketId\`) REFERENCES \`tickets\`(\`id\`) ON DELETE CASCADE ON UPDATE CASCADE"
 
+# SLA breach attribution (v3.1): per-agent breach owner + resettable sla window
+run_sql "ALTER TABLE \`sla_logs\` ADD COLUMN \`slaStartAt\` DATETIME(3) NULL"
+run_sql "CREATE TABLE IF NOT EXISTS \`sla_breach_events\` (\`id\` VARCHAR(191) NOT NULL, \`tenantId\` VARCHAR(191) NOT NULL, \`ticketId\` VARCHAR(191) NOT NULL, \`agentId\` VARCHAR(191) NULL, \`kind\` VARCHAR(191) NOT NULL, \`breachedAt\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), INDEX \`sla_breach_events_tenantId_idx\`(\`tenantId\`), INDEX \`sla_breach_events_agentId_idx\`(\`agentId\`), INDEX \`sla_breach_events_ticketId_idx\`(\`ticketId\`), PRIMARY KEY (\`id\`)) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+run_sql "ALTER TABLE \`sla_breach_events\` ADD CONSTRAINT \`sla_breach_events_ticketId_fkey\` FOREIGN KEY (\`ticketId\`) REFERENCES \`tickets\`(\`id\`) ON DELETE CASCADE ON UPDATE CASCADE"
+
 echo -e "${GREEN}✅ Schema columns applied${NC}"
 
 # Resolve any migrations stuck in failed state (schema already synced above)

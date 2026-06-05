@@ -442,6 +442,7 @@ model Ticket {
   attachments TicketAttachment[]
   slaLog      SlaLog?
   olaLog      OlaLog?
+  slaBreachEvents SlaBreachEvent[]
 
   @@index([tenantId])
   @@index([status])
@@ -554,6 +555,7 @@ model OlaLog {
 model SlaLog {
   id               String    @id @default(cuid())
   ticketId         String    @unique
+  slaStartAt       DateTime?                        // start of the CURRENT sla window (reset on reassign-after-breach); defaults to ticket.createdAt
   firstResponseAt  DateTime?
   resolvedAt       DateTime?
   responseBreached Boolean   @default(false)
@@ -563,6 +565,25 @@ model SlaLog {
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@map("sla_logs")
+}
+
+// Immutable per-agent breach attribution. One row per (ticket, kind) at the moment
+// the breach is detected, stamped with the agent responsible THEN. Never moves on
+// reassignment, so per-agent counts and the tenant total reconcile by construction.
+model SlaBreachEvent {
+  id         String   @id @default(cuid())
+  tenantId   String
+  ticketId   String
+  agentId    String?                      // assignee at breach time; null = unassigned/unattributed
+  kind       String                       // 'RESPONSE' | 'RESOLVE'
+  breachedAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([agentId])
+  @@index([ticketId])
+  @@map("sla_breach_events")
 }
 
 // ─────────────────────────────────────────────────────────────
