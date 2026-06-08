@@ -231,6 +231,12 @@ run_sql "ALTER TABLE \`sla_breach_events\` ADD CONSTRAINT \`sla_breach_events_ti
 
 echo -e "${GREEN}✅ Schema columns applied${NC}"
 
+# From here on, NEVER abort the script: migrations are idempotent and each step is
+# individually guarded, and the restart below MUST always run. 'prisma migrate status'
+# returns non-zero on OnPrem (schema kept in sync via run_sql, not Prisma's migration
+# history); with 'set -e' that aborted the run before the restart step.
+set +e
+
 # Resolve any migrations stuck in failed state (schema already synced above)
 MIGRATE_STATUS=$($PRISMA migrate status $SCHEMA 2>&1)
 echo "$MIGRATE_STATUS" | grep -oE '[0-9]{14}_[a-zA-Z0-9_]+' | while read migration; do
